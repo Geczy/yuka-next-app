@@ -21,6 +21,7 @@ import {
 	PaginationNext,
 	PaginationPrevious,
 } from "@/components/ui/pagination";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
 	TableBody,
@@ -101,7 +102,9 @@ const getInitialFoodOnly = () => {
 			return true;
 		}
 
-		return params.get("foodOnly") === "true";
+		if (params.get("foodOnly") === "false") {
+			return false;
+		}
 	}
 	return true;
 };
@@ -135,24 +138,6 @@ const riskColors: { [key: number]: BadgeProps["color"] } = {
 	3: "yellow",
 	4: "green",
 };
-
-/*
-    public static String c(Context context, int i10) {
-        if (i10 == 1) {
-            return context.getString(R.string.risk_high);
-        }
-        if (i10 == 2) {
-            return context.getString(R.string.risk_medium);
-        }
-        if (i10 == 3) {
-            return context.getString(R.string.risk_low);
-        }
-        if (i10 != 4) {
-            return "";
-        }
-        return context.getString(R.string.risk_none);
-    }
-				*/
 
 const ingredientRisks: { [key: number]: string } = {
 	1: "risk_high",
@@ -236,11 +221,14 @@ const SearchPage: FC = () => {
 	const [foodOnly, setFoodOnly] = useState(getInitialFoodOnly());
 	const [minGrade, setMinGrade] = useState(getInitialMinGrade());
 	const [maxGrade, setMaxGrade] = useState(getInitialMaxGrade());
+	const [page, setPage] = useState(1);
+	const [limit] = useState(10);
 	const {
-		data: { result, additives, ingredients } = {
+		data: { result, additives, ingredients, hasMore } = {
 			result: [],
 			additives: [],
 			ingredients: [],
+			hasMore: false,
 		},
 		error,
 		isLoading,
@@ -248,8 +236,9 @@ const SearchPage: FC = () => {
 		result: realmfoodproduct[] | realmcosmeticsproduct[];
 		additives: additive[];
 		ingredients: ingredient[];
+		hasMore: boolean;
 	}>(
-		`/api/search?query=${query}&foodOnly=${foodOnly}&minGrade=${minGrade}&maxGrade=${maxGrade}`,
+		`/api/search?query=${query}&foodOnly=${foodOnly}&minGrade=${minGrade}&maxGrade=${maxGrade}&page=${page}&limit=${limit}`,
 		fetcher,
 	);
 
@@ -263,6 +252,7 @@ const SearchPage: FC = () => {
 		);
 		setMinGrade(Number.parseInt(params.get("minGrade") || "80"));
 		setMaxGrade(Number.parseInt(params.get("maxGrade") || "100"));
+		setPage(Number.parseInt(params.get("page") || "1"));
 	};
 
 	useEffect(() => {
@@ -275,12 +265,13 @@ const SearchPage: FC = () => {
 		params.set("foodOnly", foodOnly.toString());
 		params.set("minGrade", minGrade.toString());
 		params.set("maxGrade", maxGrade.toString());
+		params.set("page", page.toString());
 		window.history.replaceState(
 			{},
 			"",
 			`${window.location.pathname}?${params}`,
 		);
-	}, [query, foodOnly, minGrade, maxGrade]);
+	}, [query, foodOnly, minGrade, maxGrade, page]);
 
 	useEffect(() => {
 		const handlePopState = () => {
@@ -305,10 +296,12 @@ const SearchPage: FC = () => {
 		params.set("foodOnly", foodOnly.toString());
 		params.set("minGrade", minGrade.toString());
 		params.set("maxGrade", maxGrade.toString());
+		params.set("page", "1");
 
 		window.history.pushState({}, "", `${window.location.pathname}?${params}`);
 
 		setQuery(newQuery);
+		setPage(1);
 	};
 
 	const toggleFoodOnly = () => {
@@ -319,10 +312,31 @@ const SearchPage: FC = () => {
 		params.set("foodOnly", newFoodOnly.toString());
 		params.set("minGrade", minGrade.toString());
 		params.set("maxGrade", maxGrade.toString());
+		params.set("page", "1");
 
 		window.history.pushState({}, "", `${window.location.pathname}?${params}`);
 
 		setFoodOnly(newFoodOnly);
+		setPage(1);
+	};
+
+	const goToPage = (newPage: number) => {
+		if (newPage < 1) {
+			return;
+		}
+		if (newPage > page && !hasMore) {
+			return;
+		}
+		setPage(newPage);
+		const params = new URLSearchParams(window.location.search);
+
+		params.set("query", query);
+		params.set("foodOnly", foodOnly.toString());
+		params.set("minGrade", minGrade.toString());
+		params.set("maxGrade", maxGrade.toString());
+		params.set("page", newPage.toString());
+
+		window.history.pushState({}, "", `${window.location.pathname}?${params}`);
 	};
 
 	return (
@@ -397,16 +411,7 @@ const SearchPage: FC = () => {
 							Search
 						</Button>
 					</form>
-					<div className="flex flex-col space-y-6">
-						{isLoading && (
-							<Alert className="max-h-[80px]">
-								<LoaderCircle className="h-4 w-4 animate-spin" />
-								<AlertTitle>Loading</AlertTitle>
-								<AlertDescription>
-									Please wait while we fetch the data...
-								</AlertDescription>
-							</Alert>
-						)}
+					<div className="flex flex-col space-y-6 w-full">
 						{error && (
 							<Alert className="max-h-[100px]" variant="destructive">
 								<AlertCircle className="h-4 w-4" />
@@ -417,20 +422,22 @@ const SearchPage: FC = () => {
 								</AlertDescription>
 							</Alert>
 						)}
-						<div className="flex-1">
+						<div className="flex-1 space-y-4">
 							<Pagination>
 								<PaginationContent>
 									<PaginationItem>
-										<PaginationPrevious href="#" />
+										<PaginationPrevious
+											className="cursor-pointer"
+											onClick={() => goToPage(page - 1)}
+											isActive={page !== 1}
+										/>
 									</PaginationItem>
 									<PaginationItem>
-										<PaginationLink href="#">1</PaginationLink>
-									</PaginationItem>
-									<PaginationItem>
-										<PaginationEllipsis />
-									</PaginationItem>
-									<PaginationItem>
-										<PaginationNext href="#" />
+										<PaginationNext
+											className="cursor-pointer"
+											onClick={() => goToPage(page + 1)}
+											isActive={hasMore}
+										/>
 									</PaginationItem>
 								</PaginationContent>
 							</Pagination>
@@ -447,6 +454,54 @@ const SearchPage: FC = () => {
 									</TableRow>
 								</TableHead>
 								<TableBody>
+									{(isLoading || !result) && (
+										<>
+											<TableRow>
+												<TableCell>
+													<div className="flex flex-col space-y-3">
+														<Skeleton className="w-28 h-28 rounded" />
+														<div className="space-y-2">
+															<Skeleton className="h-4 w-[200px]" />
+														</div>
+													</div>
+												</TableCell>
+												<TableCell>
+													<div className="flex flex-col space-y-2">
+														<Skeleton className="h-4 w-[200px]" />
+														<Skeleton className="h-4 w-[100px]" />
+													</div>
+												</TableCell>
+												<TableCell>
+													<div className="flex flex-col space-y-2">
+														<Skeleton className="h-4 w-[100px]" />
+														<Skeleton className="h-4 w-[100px]" />
+													</div>
+												</TableCell>
+											</TableRow>
+											<TableRow>
+												<TableCell>
+													<div className="flex flex-col space-y-3">
+														<Skeleton className="w-28 h-28 rounded" />
+														<div className="space-y-2">
+															<Skeleton className="h-4 w-[200px]" />
+														</div>
+													</div>
+												</TableCell>
+												<TableCell>
+													<div className="flex flex-col space-y-2">
+														<Skeleton className="h-4 w-[200px]" />
+														<Skeleton className="h-4 w-[100px]" />
+													</div>
+												</TableCell>
+												<TableCell>
+													<div className="flex flex-col space-y-2">
+														<Skeleton className="h-4 w-[100px]" />
+														<Skeleton className="h-4 w-[100px]" />
+													</div>
+												</TableCell>
+											</TableRow>
+										</>
+									)}
 									{result?.map((hit) => {
 										const sortedAdditives =
 											"additives" in hit &&
@@ -786,6 +841,24 @@ const SearchPage: FC = () => {
 									})}
 								</TableBody>
 							</Table>
+							<Pagination>
+								<PaginationContent>
+									<PaginationItem>
+										<PaginationPrevious
+											className="cursor-pointer"
+											onClick={() => goToPage(page - 1)}
+											isActive={page !== 1}
+										/>
+									</PaginationItem>
+									<PaginationItem>
+										<PaginationNext
+											className="cursor-pointer"
+											onClick={() => goToPage(page + 1)}
+											isActive={hasMore}
+										/>
+									</PaginationItem>
+								</PaginationContent>
+							</Pagination>
 						</div>
 					</div>
 				</div>

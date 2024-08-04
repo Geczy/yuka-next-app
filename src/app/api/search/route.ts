@@ -7,12 +7,16 @@ export async function GET(req: NextRequest, res: NextResponse) {
 	const foodOnly = searchParams.get("foodOnly");
 	const minGrade = Number.parseInt(searchParams.get("minGrade") || "80");
 	const maxGrade = Number.parseInt(searchParams.get("maxGrade") || "100");
+	const page = Number.parseInt(searchParams.get("page") || "1");
+	const limit = Number.parseInt(searchParams.get("limit") || "10");
 
 	if (
 		typeof query !== "string" ||
 		typeof foodOnly !== "string" ||
 		Number.isNaN(minGrade) ||
-		Number.isNaN(maxGrade)
+		Number.isNaN(maxGrade) ||
+		Number.isNaN(page) ||
+		Number.isNaN(limit)
 	) {
 		return Response.json(
 			{ error: "Invalid query parameters" },
@@ -21,6 +25,7 @@ export async function GET(req: NextRequest, res: NextResponse) {
 	}
 
 	const foodOnlyBool = foodOnly === "true";
+	const offset = (page - 1) * limit;
 
 	try {
 		const result = foodOnlyBool
@@ -38,7 +43,8 @@ export async function GET(req: NextRequest, res: NextResponse) {
 					orderBy: {
 						grade: "desc",
 					},
-					take: 10,
+					skip: offset,
+					take: limit + 1,
 				})
 			: await prisma.realmcosmeticsproduct.findMany({
 					where: {
@@ -54,8 +60,14 @@ export async function GET(req: NextRequest, res: NextResponse) {
 					orderBy: {
 						grade: "desc",
 					},
-					take: 10,
+					skip: offset,
+					take: limit + 1,
 				});
+
+		const hasMore = result.length > limit;
+		if (hasMore) {
+			result.pop();
+		}
 
 		const additiveCodes = new Set<string>();
 		for (const product of result) {
@@ -93,7 +105,10 @@ export async function GET(req: NextRequest, res: NextResponse) {
 			},
 		});
 
-		return Response.json({ result, additives, ingredients }, { status: 200 });
+		return Response.json(
+			{ result, additives, ingredients, hasMore },
+			{ status: 200 },
+		);
 	} catch (error) {
 		console.error("Error fetching data:", error);
 		return Response.json({ error: "Error fetching data" }, { status: 500 });
