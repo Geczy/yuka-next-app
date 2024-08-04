@@ -5,8 +5,15 @@ export async function GET(req: NextRequest, res: NextResponse) {
 	const searchParams = req.nextUrl.searchParams;
 	const query = searchParams.get("query")?.trim();
 	const foodOnly = searchParams.get("foodOnly");
+	const minGrade = Number.parseInt(searchParams.get("minGrade") || "80");
+	const maxGrade = Number.parseInt(searchParams.get("maxGrade") || "100");
 
-	if (typeof query !== "string" || typeof foodOnly !== "string") {
+	if (
+		typeof query !== "string" ||
+		typeof foodOnly !== "string" ||
+		Number.isNaN(minGrade) ||
+		Number.isNaN(maxGrade)
+	) {
 		return Response.json(
 			{ error: "Invalid query parameters" },
 			{ status: 400 },
@@ -24,13 +31,14 @@ export async function GET(req: NextRequest, res: NextResponse) {
 							mode: "insensitive",
 						},
 						grade: {
-							gte: 75,
+							gte: minGrade,
+							lte: maxGrade,
 						},
 					},
 					orderBy: {
 						grade: "desc",
 					},
-					take: 25, // Limit to 25
+					take: 10,
 				})
 			: await prisma.realmcosmeticsproduct.findMany({
 					where: {
@@ -39,15 +47,53 @@ export async function GET(req: NextRequest, res: NextResponse) {
 							mode: "insensitive",
 						},
 						grade: {
-							gte: 75,
+							gte: minGrade,
+							lte: maxGrade,
 						},
 					},
 					orderBy: {
 						grade: "desc",
 					},
-					take: 25, // Limit to 25
+					take: 10,
 				});
-		return Response.json(result, { status: 200 });
+
+		const additiveCodes = new Set<string>();
+		for (const product of result) {
+			if ("additives" in product) {
+				for (const code of product.additives) {
+					additiveCodes.add(code);
+				}
+			}
+		}
+
+		const ingredientCodes = new Set<string>();
+		for (const product of result) {
+			if ("ingredients" in product) {
+				for (const code of product.ingredients) {
+					ingredientCodes.add(code);
+				}
+			}
+		}
+
+		const ingredients = await prisma.ingredient.findMany({
+			where: {
+				id_: {
+					in: Array.from(ingredientCodes),
+					mode: "insensitive",
+				},
+			},
+		});
+
+		const additives = await prisma.additive.findMany({
+			where: {
+				code: {
+					in: Array.from(additiveCodes),
+					mode: "insensitive",
+				},
+			},
+		});
+
+		return Response.json({ result, additives, ingredients }, { status: 200 });
 	} catch (error) {
 		console.error("Error fetching data:", error);
 		return Response.json({ error: "Error fetching data" }, { status: 500 });
