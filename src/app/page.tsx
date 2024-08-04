@@ -633,6 +633,7 @@ const SearchPage: FC = () => {
 												<TableCell className="flex flex-row flex-wrap items-center">
 													{Array.isArray(sortedAdditives) &&
 														sortedAdditives?.map((addd2) => {
+															const sources = addd2?.sources || [];
 															const addd = strings.resources.string.find(
 																(item) => item._name === addd2?.nameKey,
 															);
@@ -666,47 +667,71 @@ const SearchPage: FC = () => {
 																		</Badge>
 																	</TooltipTrigger>
 																	<TooltipContent className="max-w-sm space-y-4">
-																		<div>
-																			<Heading level={1}>
-																				{decodeDescription(addd.__text)}
-																			</Heading>
-																			<p className="space-x-2 flex-row flex items-center">
-																				<Badge
-																					style={{ height: 12, width: 12 }}
-																					color={
-																						riskColors[dangerousnessLevel] ||
-																						"zinc"
-																					}
-																				>
-																					{" "}
-																				</Badge>
-																				<span>{riskStr}</span>
-																			</p>
-																		</div>
-																		<div className="flex flex-col p-3 rounded bg-slate-100">
-																			<span>
-																				{decodeDescription(
-																					matchedCategory?.__text,
-																				)}
-																			</span>
-																			<small>
-																				{matchedCategoryDesc
-																					? decodeDescription(
-																							strings.resources.string.find(
-																								(i) =>
-																									i._name ===
-																									matchedCategoryDesc.toString(),
-																							)?.__text,
-																						)
-																					: "N/A"}
-																			</small>
-																		</div>
+																		<div className="max-h-[400px] overflow-auto space-y-4">
+																			<div>
+																				<Heading level={1}>
+																					{decodeDescription(addd.__text)}
+																				</Heading>
+																				<p className="space-x-2 flex-row flex items-center">
+																					<Badge
+																						style={{ height: 12, width: 12 }}
+																						color={
+																							riskColors[dangerousnessLevel] ||
+																							"zinc"
+																						}
+																					>
+																						{" "}
+																					</Badge>
+																					<span>{riskStr}</span>
+																				</p>
+																			</div>
+																			<div className="flex flex-col p-3 rounded bg-slate-100">
+																				<span>
+																					{decodeDescription(
+																						matchedCategory?.__text,
+																					)}
+																				</span>
+																				<small>
+																					{matchedCategoryDesc
+																						? decodeDescription(
+																								strings.resources.string.find(
+																									(i) =>
+																										i._name ===
+																										matchedCategoryDesc.toString(),
+																								)?.__text,
+																							)
+																						: "N/A"}
+																				</small>
+																			</div>
 
-																		<p className="whitespace-pre-wrap">
-																			{decodeDescription(
-																				matchedDescription?.__text,
+																			<p className="whitespace-pre-wrap">
+																				{decodeDescription(
+																					matchedDescription?.__text,
+																				)}
+																			</p>
+
+																			{sources && sources.length > 0 && (
+																				<ul className="flex flex-col space-y-3 list-disc list-inside">
+																					{sources?.map((source, i) => (
+																						<li
+																							key={i}
+																							className="text-wrap break-words"
+																						>
+																							{source.year} {source.label}{" "}
+																							{source.url && (
+																								<Link
+																									className="text-blue-500 hover:underline"
+																									target="_blank"
+																									href={source.url}
+																								>
+																									{source.url}
+																								</Link>
+																							)}
+																						</li>
+																					))}
+																				</ul>
 																			)}
-																		</p>
+																		</div>
 																	</TooltipContent>
 																</Tooltip>
 															) : (
@@ -717,20 +742,13 @@ const SearchPage: FC = () => {
 														sortedIngredients?.map((ingredient) => {
 															const matchedDescription =
 																ingredient?.description_en;
-															const matchedCategory =
-																strings.resources.string.find(
-																	(i) => i._name === ingredient?.families[0],
-																);
+
 															const dangerousnessLevel =
 																ingredient?.dangerousnessLevel || 0;
 															const riskStr = getIngredientRiskLabel(
 																dangerousnessLevel,
 																strings,
 															);
-															const matchedCategoryDesc =
-																getCategoryDescription(
-																	ingredient?.families[0] || "",
-																);
 
 															return ingredient ? (
 																<Tooltip key={ingredient?.id}>
