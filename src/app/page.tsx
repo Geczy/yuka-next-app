@@ -206,12 +206,19 @@ const SearchPage: FC = () => {
 											: ""}
 									</TableCell>
 									<TableCell className="flex flex-row flex-wrap gap-2">
-										<Button
+									<Button
 											color="light"
 											target="_blank"
 											href={`https://www.heb.com/search?q=${hit.brand} ${hit.name}`}
 										>
 											HEB
+										</Button>
+										<Button
+											color="light"
+											target="_blank"
+											href={`https://www.walmart.com/search?q=${hit.brand} ${hit.name}`}
+										>
+											Walmart
 										</Button>
 										<Button
 											color="light"
