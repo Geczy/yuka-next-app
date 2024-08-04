@@ -30,6 +30,7 @@ export async function GET(req: NextRequest, res: NextResponse) {
 					orderBy: {
 						grade: "desc",
 					},
+					take: 25, // Limit to 25
 				})
 			: await prisma.realmcosmeticsproduct.findMany({
 					where: {
@@ -44,6 +45,7 @@ export async function GET(req: NextRequest, res: NextResponse) {
 					orderBy: {
 						grade: "desc",
 					},
+					take: 25, // Limit to 25
 				});
 		return Response.json(result, { status: 200 });
 	} catch (error) {
