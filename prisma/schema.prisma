@@ -1,0 +1,292 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+type AdditiveSources {
+  authority String?
+  label     String
+  url       String?
+  year      String
+}
+
+type FoodcriteriaBlocks {
+  body     String
+  iconName String?
+  rawValue String?
+  status   String
+  title    String
+  type     String
+}
+
+type IngredientSources {
+  authority String?
+  label     String
+  url       String?
+  year      String
+}
+
+model additive {
+  id                     String            @id @default(auto()) @map("_id") @db.ObjectId
+  category               String
+  code                   String
+  dangerousnessLevel     Int
+  longDescriptionKey     String?
+  nameKey                String
+  number                 Int
+  organicLabelProhibited Boolean
+  shortDescriptionKey    String?
+  sources                AdditiveSources[]
+}
+
+model category {
+  id                               String   @id @default(auto()) @map("_id") @db.ObjectId
+  additives_irrelevant             Boolean?
+  children                         String[]
+  compatible_labels_slugs          String[]
+  countries                        String?
+  exclusively_fruits_or_vegetables Boolean?
+  food_state                       String?
+  fruits_vegetables_type           String?
+  irrelevant_diets                 String[]
+  mostCommonPackagingFormats       String[]
+  order                            Int
+  parent                           String?
+  product_environmental_footprint  Int?
+  recommendations_enabled          Boolean
+  slug                             String
+  type                             String
+}
+
+model cosmeticsallegation {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  body_de    String
+  body_en    String
+  body_es    String
+  body_fr    String
+  body_it    String
+  categories String[]
+  family     String
+  iconName   String
+  id_        Int      @map("id")
+  /// Could not determine type: the field only had null or empty values in the sample set.
+  link       Json?
+  name_de    String
+  name_en    String
+  name_es    String
+  name_fr    String
+  name_it    String
+  teaser_de  String
+  teaser_en  String
+  teaser_es  String
+  teaser_fr  String
+  teaser_it  String
+}
+
+model environmentalperformanceindex {
+  id              String @id @default(auto()) @map("_id") @db.ObjectId
+  /// Multiple data types found: Float: 89%, Int: 11% out of 182 sampled entries
+  agriculture     Json
+  /// Multiple data types found: Float: 89%, Int: 11% out of 182 sampled entries
+  airQuality      Json
+  /// Multiple data types found: Float: 89%, Int: 11% out of 182 sampled entries
+  biodiversity    Json
+  /// Multiple data types found: Float: 87.4%, Int: 12.6% out of 182 sampled entries
+  climateChange   Json
+  countryIsoCode  String
+  rank            Int
+  /// Multiple data types found: Float: 87.4%, Int: 12.6% out of 182 sampled entries
+  score           Json
+  /// Multiple data types found: Float: 96.7%, Int: 3.3% out of 182 sampled entries
+  waterManagement Json
+}
+
+model faofishingarea {
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  faoCode  String
+  location String
+  ocean    String?
+}
+
+model fish {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  name             String
+  slug             String
+  sustainableAreas String[]
+  threatenedAreas  String[]
+}
+
+model fishingsubarea {
+  id               String @id @default(auto()) @map("_id") @db.ObjectId
+  code             String
+  identifier       String
+  majorFishingArea String
+  name             String
+}
+
+model foodcriteria {
+  id          String               @id @default(auto()) @map("_id") @db.ObjectId
+  blocks      FoodcriteriaBlocks[]
+  iconName    String
+  productType String
+  slug        String
+}
+
+model foodcriteriablock {
+  id       String  @id @map("_id")
+  body     String
+  iconName String?
+  rawValue String?
+  status   String
+  title    String
+  type     String
+}
+
+model foodstate {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  rawValue String
+}
+
+model ingredient {
+  id                 String              @id @default(auto()) @map("_id") @db.ObjectId
+  allergen           String?
+  carcinogen         String?
+  dangerousnessLevel Int
+  description_de     String?
+  description_en     String?
+  description_es     String?
+  description_fr     String?
+  description_it     String?
+  endocrineDisruptor String?
+  families           String[]
+  id_                String              @map("id")
+  inci               String
+  irritant           String?
+  name_de            String?
+  name_en            String?
+  name_es            String?
+  name_fr            String?
+  name_it            String?
+  otherHealthEffects String?
+  pollutant          Boolean
+  sources            IngredientSources[]
+}
+
+model ocean {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  fishingAreas String[]
+  name         String
+  slug         String
+}
+
+model packagingformat {
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  associatedFormats    String[]
+  compatibleCategories String[]
+  compatibleFoodStates String[]
+  compatibleMaterials  String[]
+  frenchPronoun        String
+  isFeminine           Boolean
+  isPrimary            Boolean
+  name                 String
+  /// Multiple data types found: Float: 36.7%, Int: 63.3% out of 30 sampled entries
+  ratio                Json
+  slug                 String
+}
+
+model packagingmaterial {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  name              String
+  recyclableFormats String[]
+  slug              String
+}
+
+model realmcosmeticsproduct {
+  id          String   @id @map("_id")
+  bio         Boolean
+  brand       String?
+  category    String?
+  countries   String
+  grade       Int?
+  ingredients String[]
+  name        String
+  photo       String
+  updated     DateTime @db.Date
+}
+
+model realmdietingredient {
+  id    String   @id @map("_id")
+  diets String[]
+}
+
+model realmfoodproduct {
+  id                   String   @id @map("_id")
+  additives            String[]
+  bio                  Boolean
+  brand                String?
+  /// Multiple data types found: Float: 65.5%, Int: 34.5% out of 1000 sampled entries
+  calories             Json?
+  category             String?
+  countries            String
+  dietIngredients      String[]
+  extraCriteria        String?
+  /// Multiple data types found: Float: 52.6%, Int: 47.4% out of 1000 sampled entries
+  fat                  Json?
+  /// Multiple data types found: Float: 48.8%, Int: 51.2% out of 1000 sampled entries
+  fibers               Json?
+  fruits               Int?
+  grade                Int?
+  gradeForbidden       Boolean
+  gradeForbiddenReason String?
+  isBeverage           Boolean
+  isFat                Boolean
+  isMilk               Boolean
+  name                 String
+  nutritionFactsFormat String
+  photo                String?
+  /// Multiple data types found: Float: 60.9%, Int: 39.1% out of 1000 sampled entries
+  proteins             Json?
+  reconstituted        Boolean
+  /// Multiple data types found: Float: 77.5%, Int: 22.5% out of 1000 sampled entries
+  salt                 Json?
+  /// Multiple data types found: Float: 46.2%, Int: 53.8% out of 1000 sampled entries
+  saturatedFat         Json?
+  /// Multiple data types found: Float: 3.4%, Int: 96.6% out of 1000 sampled entries
+  servingSize          Json?
+  /// Multiple data types found: Float: 58.8%, Int: 41.2% out of 1000 sampled entries
+  sugar                Json?
+  updated              DateTime @db.Date
+}
+
+model source {
+  id        String  @id @map("_id")
+  authority String?
+  label     String
+  url       String?
+  year      String
+}
+
+model transport {
+  id             String  @id @default(auto()) @map("_id") @db.ObjectId
+  countryIsoCode String
+  distance       Int
+  landlocked     Boolean
+  /// Multiple data types found: Float: 17.6%, Int: 82.4% out of 250 sampled entries
+  rail           Json
+  /// Multiple data types found: Float: 20.4%, Int: 79.6% out of 250 sampled entries
+  road           Json
+  /// Multiple data types found: Float: 15.2%, Int: 84.8% out of 250 sampled entries
+  sea            Json
+}
+
+model wastesortinginstruction {
+  id               String  @id @default(auto()) @map("_id") @db.ObjectId
+  binColorName     String
+  isInExtension    Boolean
+  isInProjectMetal Boolean
+  postalCode       String
+}
