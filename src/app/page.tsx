@@ -1,5 +1,4 @@
 "use client";
-
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -13,7 +12,15 @@ import {
 import { Heading } from "@/components/ui/heading";
 import { Input } from "@/components/ui/input";
 import { Listbox, ListboxLabel, ListboxOption } from "@/components/ui/listbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+	Pagination,
+	PaginationContent,
+	PaginationEllipsis,
+	PaginationItem,
+	PaginationLink,
+	PaginationNext,
+	PaginationPrevious,
+} from "@/components/ui/pagination";
 import {
 	Table,
 	TableBody,
@@ -225,10 +232,10 @@ const getCategoryDescription = (category: string): string | null =>
 	categoryDescriptions[category] || null;
 
 const SearchPage: FC = () => {
-	const [query, setQuery] = useState("");
-	const [foodOnly, setFoodOnly] = useState(true);
-	const [minGrade, setMinGrade] = useState(80);
-	const [maxGrade, setMaxGrade] = useState(100);
+	const [query, setQuery] = useState(getInitialQuery());
+	const [foodOnly, setFoodOnly] = useState(getInitialFoodOnly());
+	const [minGrade, setMinGrade] = useState(getInitialMinGrade());
+	const [maxGrade, setMaxGrade] = useState(getInitialMaxGrade());
 	const {
 		data: { result, additives, ingredients } = {
 			result: [],
@@ -290,7 +297,7 @@ const SearchPage: FC = () => {
 	const handleSearch = (e: FormEvent) => {
 		e.preventDefault();
 		const form = e.target as HTMLFormElement;
-		const input = form.elements.namedItem("search") as HTMLInputElement;
+		const input = form.elements.namedItem("query") as HTMLInputElement;
 		const newQuery = input.value;
 		const params = new URLSearchParams(window.location.search);
 
@@ -350,7 +357,7 @@ const SearchPage: FC = () => {
 									<Input
 										defaultValue={query}
 										className="w-full md:max-w-xs"
-										name="search"
+										name="query"
 										placeholder="Search by product name..."
 									/>
 								</Field>
@@ -411,6 +418,23 @@ const SearchPage: FC = () => {
 							</Alert>
 						)}
 						<div className="flex-1">
+							<Pagination>
+								<PaginationContent>
+									<PaginationItem>
+										<PaginationPrevious href="#" />
+									</PaginationItem>
+									<PaginationItem>
+										<PaginationLink href="#">1</PaginationLink>
+									</PaginationItem>
+									<PaginationItem>
+										<PaginationEllipsis />
+									</PaginationItem>
+									<PaginationItem>
+										<PaginationNext href="#" />
+									</PaginationItem>
+								</PaginationContent>
+							</Pagination>
+
 							<Table>
 								<TableHead>
 									<TableRow>
