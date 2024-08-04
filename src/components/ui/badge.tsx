@@ -2,7 +2,6 @@ import * as Headless from "@headlessui/react";
 import clsx from "clsx";
 import type React from "react";
 import { forwardRef } from "react";
-import { TouchTarget } from "./button";
 import { Link } from "./link";
 
 const colors = {
@@ -77,15 +76,11 @@ export const BadgeButton = forwardRef(function BadgeButton(
 			className={classes}
 			ref={ref as React.ForwardedRef<HTMLAnchorElement>}
 		>
-			<TouchTarget>
-				<Badge color={color}>{children}</Badge>
-			</TouchTarget>
+			<Badge color={color}>{children}</Badge>
 		</Link>
 	) : (
 		<Headless.Button {...props} className={classes} ref={ref}>
-			<TouchTarget>
-				<Badge color={color}>{children}</Badge>
-			</TouchTarget>
+			<Badge color={color}>{children}</Badge>
 		</Headless.Button>
 	);
 });
