@@ -1,5 +1,6 @@
 "use client";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -28,12 +29,14 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import type {
 	additive,
 	ingredient,
 	realmcosmeticsproduct,
 	realmfoodproduct,
 } from "@prisma/client";
+import { AlertCircle, ExternalLinkIcon, LoaderCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { type FC, type FormEvent, useEffect, useState } from "react";
@@ -355,6 +358,8 @@ const SearchPage: FC = () => {
 									<Label>Min Grade</Label>
 									<Input
 										type="number"
+										min={0}
+										max={100}
 										defaultValue={minGrade}
 										className="w-full md:max-w-xs"
 										name="minGrade"
@@ -368,6 +373,8 @@ const SearchPage: FC = () => {
 									<Label>Max Grade</Label>
 									<Input
 										type="number"
+										min={0}
+										max={100}
 										defaultValue={maxGrade}
 										className="w-full md:max-w-xs"
 										name="maxGrade"
@@ -383,332 +390,379 @@ const SearchPage: FC = () => {
 							Search
 						</Button>
 					</form>
-					{isLoading && <div>Loading...</div>}
-					{error && <div className="text-red-500">Error fetching data</div>}
-					<div className="flex-1">
-						<Table>
-							<TableHead>
-								<TableRow>
-									<TableHeader />
-									<TableHeader>Product</TableHeader>
-									<TableHeader>Grade</TableHeader>
-									<TableHeader>
-										{foodOnly ? "Additives" : "Ingredients"}
-									</TableHeader>
-								</TableRow>
-							</TableHead>
-							<TableBody>
-								{result?.map((hit) => {
-									const sortedAdditives: typeof additives =
-										"additives" in hit &&
-										hit.additives
-											.map((key) => {
-												const addd2 = additives.find(
-													(item) => item.code === key,
+					<div className="flex flex-col space-y-6">
+						{isLoading && (
+							<Alert className="max-h-[80px]">
+								<LoaderCircle className="h-4 w-4 animate-spin" />
+								<AlertTitle>Loading</AlertTitle>
+								<AlertDescription>
+									Please wait while we fetch the data...
+								</AlertDescription>
+							</Alert>
+						)}
+						{error && (
+							<Alert className="max-h-[100px]" variant="destructive">
+								<AlertCircle className="h-4 w-4" />
+								<AlertTitle>Error</AlertTitle>
+								<AlertDescription>
+									An error occurred while fetching the data. Please try again
+									later.
+								</AlertDescription>
+							</Alert>
+						)}
+						<div className="flex-1">
+							<Table>
+								<TableHead>
+									<TableRow>
+										<TableHeader />
+										<TableHeader>Product</TableHeader>
+										<TableHeader>Grade</TableHeader>
+										<TableHeader>
+											{foodOnly ? "Additives" : "Ingredients"}
+										</TableHeader>
+									</TableRow>
+								</TableHead>
+								<TableBody>
+									{result?.map((hit) => {
+										const sortedAdditives: typeof additives =
+											"additives" in hit &&
+											hit.additives
+												.map((key) => {
+													const addd2 = additives.find(
+														(item) => item.code === key,
+													);
+													return addd2;
+												})
+												.filter(Boolean) // Remove any undefined values
+												.sort(
+													(a, b) =>
+														(a?.dangerousnessLevel || 0) -
+														(b?.dangerousnessLevel || 0),
 												);
-												return addd2;
-											})
-											.filter(Boolean) // Remove any undefined values
-											.sort(
-												(a, b) =>
-													(a?.dangerousnessLevel || 0) -
-													(b?.dangerousnessLevel || 0),
-											);
 
-									const sortedIngredients: typeof ingredients =
-										"ingredients" in hit &&
-										hit.ingredients
-											.map((key) => {
-												const ingr2 = ingredients.find(
-													(item) => item.id_ === key,
+										const sortedIngredients: typeof ingredients =
+											"ingredients" in hit &&
+											hit.ingredients
+												.map((key) => {
+													const ingr2 = ingredients.find(
+														(item) => item.id_ === key,
+													);
+													return ingr2;
+												})
+												.filter(Boolean) // Remove any undefined values
+												.sort(
+													(a, b) =>
+														(a?.dangerousnessLevel || 0) -
+														(b?.dangerousnessLevel || 0),
 												);
-												return ingr2;
-											})
-											.filter(Boolean) // Remove any undefined values
-											.sort(
-												(a, b) =>
-													(a?.dangerousnessLevel || 0) -
-													(b?.dangerousnessLevel || 0),
-											);
 
-									return (
-										<TableRow key={`term-${hit.id}`}>
-											<TableCell>
-												<div className="relative w-28 h-28 max-w-28">
-													<Image
-														src={`https://mgates.me/yuka/${hit.id}.jpg`}
-														alt={hit.name}
-														layout="fill"
-														objectFit="contain"
-														className="rounded"
-													/>
-												</div>
-											</TableCell>
-											<TableCell>
-												<div className="flex flex-row space-x-2">
-													<div className="flex flex-col">
-														<span>{hit.name}</span>
-														<small>{hit.brand}</small>
+										return (
+											<TableRow key={`term-${hit.id}`}>
+												<TableCell className="space-y-2">
+													<div className="relative w-28 h-28 max-w-28">
+														<Image
+															src={`https://mgates.me/yuka/${hit.id}.jpg`}
+															alt={hit.name}
+															layout="fill"
+															objectFit="contain"
+															className="rounded"
+														/>
 													</div>
-												</div>
-											</TableCell>
-											<TableCell>
-												<div className="flex flex-row space-x-1">
-													<div>
-														<Badge
-															style={{ height: 12, width: 12 }}
-															color={getGradeColor(hit.grade)}
+													<div className="flex flex-row flex-wrap">
+														<Link
+															className={cn(
+																buttonVariants({
+																	variant: "link",
+																	size: "sm",
+																}),
+																"space-x-1",
+															)}
+															target="_blank"
+															href={`https://www.heb.com/search?q=${hit.brand} ${hit.name}`}
 														>
-															{" "}
-														</Badge>
+															<span>HEB</span>
+															<ExternalLinkIcon className="h-3 w-3" />
+														</Link>
+														<Link
+															className={cn(
+																buttonVariants({
+																	variant: "link",
+																	size: "sm",
+																}),
+																"space-x-1",
+															)}
+															target="_blank"
+															href={`https://www.walmart.com/search?q=${hit.brand} ${hit.name}`}
+														>
+															<span>Walmart</span>
+															<ExternalLinkIcon className="h-3 w-3" />
+														</Link>
+														<Link
+															className={cn(
+																buttonVariants({
+																	variant: "link",
+																	size: "sm",
+																}),
+																"space-x-1",
+															)}
+															target="_blank"
+															href={`https://www.amazon.com/s?k=${hit.brand} ${hit.name}`}
+														>
+															<span>Amazon</span>
+															<ExternalLinkIcon className="h-3 w-3" />
+														</Link>
+														<Link
+															className={cn(
+																buttonVariants({
+																	variant: "link",
+																	size: "sm",
+																}),
+																"space-x-1",
+															)}
+															target="_blank"
+															href={`https://www.google.com/search?q=${hit.brand} ${hit.name}`}
+														>
+															<span>Google</span>
+															<ExternalLinkIcon className="h-3 w-3" />
+														</Link>
 													</div>
-													<div className="flex flex-col">
-														<span>{hit.grade}/100</span>
-														<span>{getGradeCategory(hit.grade)}</span>
+												</TableCell>
+												<TableCell>
+													<div className="flex flex-row space-x-2">
+														<div className="flex flex-col">
+															<span>{hit.name}</span>
+															<small>{hit.brand}</small>
+														</div>
 													</div>
-												</div>
-											</TableCell>
-											<TableCell className="flex flex-row flex-wrap items-center">
-												{Array.isArray(sortedAdditives) &&
-													sortedAdditives?.map((addd2) => {
-														const addd = strings.resources.string.find(
-															(item) => item._name === addd2?.nameKey,
-														);
-														const matchedDescription =
-															strings.resources.string.find(
-																(i) => i._name === addd2?.shortDescriptionKey,
+												</TableCell>
+												<TableCell>
+													<div className="flex flex-row space-x-1">
+														<div>
+															<Badge
+																style={{ height: 12, width: 12 }}
+																color={getGradeColor(hit.grade)}
+															>
+																{" "}
+															</Badge>
+														</div>
+														<div className="flex flex-col">
+															<span>{hit.grade}/100</span>
+															<span>{getGradeCategory(hit.grade)}</span>
+														</div>
+													</div>
+												</TableCell>
+												<TableCell className="flex flex-row flex-wrap items-center">
+													{Array.isArray(sortedAdditives) &&
+														sortedAdditives?.map((addd2) => {
+															const addd = strings.resources.string.find(
+																(item) => item._name === addd2?.nameKey,
 															);
-														const matchedCategory =
-															strings.resources.string.find(
-																(i) => i._name === addd2?.category,
+															const matchedDescription =
+																strings.resources.string.find(
+																	(i) => i._name === addd2?.shortDescriptionKey,
+																);
+															const matchedCategory =
+																strings.resources.string.find(
+																	(i) => i._name === addd2?.category,
+																);
+															const dangerousnessLevel =
+																addd2?.dangerousnessLevel || 0;
+															const riskStr = getDangerousnessLabel(
+																dangerousnessLevel,
+																strings,
 															);
-														const dangerousnessLevel =
-															addd2?.dangerousnessLevel || 0;
-														const riskStr = getDangerousnessLabel(
-															dangerousnessLevel,
-															strings,
-														);
-														const matchedCategoryDesc = getCategoryDescription(
-															addd2?.category || "",
-														);
+															const matchedCategoryDesc =
+																getCategoryDescription(addd2?.category || "");
 
-														return addd ? (
-															<Tooltip key={addd2?.id}>
-																<TooltipTrigger>
-																	<Badge
-																		className="cursor-pointer my-1 mr-1"
-																		color={
-																			riskColors[dangerousnessLevel] || "zinc"
-																		}
-																	>
-																		{decodeDescription(addd.__text)}
-																	</Badge>
-																</TooltipTrigger>
-																<TooltipContent className="max-w-sm space-y-4">
-																	<div>
-																		<Heading level={1}>
+															return addd ? (
+																<Tooltip key={addd2?.id}>
+																	<TooltipTrigger>
+																		<Badge
+																			className="cursor-pointer my-1 mr-1"
+																			color={
+																				riskColors[dangerousnessLevel] || "zinc"
+																			}
+																		>
 																			{decodeDescription(addd.__text)}
-																		</Heading>
-																		<p className="space-x-2 flex-row flex items-center">
-																			<Badge
-																				style={{ height: 12, width: 12 }}
-																				color={
-																					riskColors[dangerousnessLevel] ||
-																					"zinc"
-																				}
-																			>
-																				{" "}
-																			</Badge>
-																			<span>{riskStr}</span>
-																		</p>
-																	</div>
-																	<div className="flex flex-col p-3 rounded bg-slate-100">
-																		<span>
-																			{decodeDescription(
-																				matchedCategory?.__text,
-																			)}
-																		</span>
-																		<small>
-																			{matchedCategoryDesc
-																				? decodeDescription(
-																						strings.resources.string.find(
-																							(i) =>
-																								i._name ===
-																								matchedCategoryDesc.toString(),
-																						)?.__text,
-																					)
-																				: "N/A"}
-																		</small>
-																	</div>
-
-																	<p className="whitespace-pre-wrap">
-																		{decodeDescription(
-																			matchedDescription?.__text,
-																		)}
-																	</p>
-																</TooltipContent>
-															</Tooltip>
-														) : (
-															addd2?.name
-														);
-													})}
-												{Array.isArray(sortedIngredients) &&
-													sortedIngredients?.map((ingredient) => {
-														const matchedDescription =
-															ingredient.description_en;
-														const matchedCategory =
-															strings.resources.string.find(
-																(i) => i._name === ingredient?.families[0],
-															);
-														const dangerousnessLevel =
-															ingredient?.dangerousnessLevel || 0;
-														const riskStr = getIngredientRiskLabel(
-															dangerousnessLevel,
-															strings,
-														);
-														const matchedCategoryDesc = getCategoryDescription(
-															ingredient?.families[0] || "",
-														);
-
-														return ingredient ? (
-															<Tooltip key={ingredient?.id}>
-																<TooltipTrigger>
-																	<Badge
-																		className="cursor-pointer my-1 mr-1"
-																		color={
-																			ingredientRiskColors[
-																				dangerousnessLevel
-																			] || "zinc"
-																		}
-																	>
-																		{decodeDescription(ingredient.inci)}
-																	</Badge>
-																</TooltipTrigger>
-																<TooltipContent className="max-w-sm space-y-4">
-																	<div>
-																		<Heading level={1}>
-																			{decodeDescription(ingredient.inci)}
-																		</Heading>
-																		<p className="space-x-2 flex-row flex items-center">
-																			<Badge
-																				style={{ height: 12, width: 12 }}
-																				color={
-																					ingredientRiskColors[
-																						dangerousnessLevel
-																					] || "zinc"
-																				}
-																			>
-																				{" "}
-																			</Badge>
-																			<span>{riskStr}</span>
-																		</p>
-																	</div>
-																	{ingredient.carcinogen ||
-																	ingredient.allergen ||
-																	ingredient.irritant ||
-																	ingredient.endocrineDisruptor ? (
-																		<div className="flex flex-row space-x-2">
-																			{ingredient.carcinogen && (
-																				<div className="p-2 rounded bg-slate-100">
-																					Carcinogen
-																				</div>
-																			)}
-																			{ingredient.allergen && (
-																				<div className="p-2 rounded bg-slate-100">
-																					Allergen
-																				</div>
-																			)}
-																			{ingredient.irritant && (
-																				<div className="p-2 rounded bg-slate-100">
-																					Irritant
-																				</div>
-																			)}
-																			{ingredient.endocrineDisruptor && (
-																				<div className="p-2 rounded bg-slate-100">
-																					Endocrine Disruptor
-																				</div>
-																			)}
+																		</Badge>
+																	</TooltipTrigger>
+																	<TooltipContent className="max-w-sm space-y-4">
+																		<div>
+																			<Heading level={1}>
+																				{decodeDescription(addd.__text)}
+																			</Heading>
+																			<p className="space-x-2 flex-row flex items-center">
+																				<Badge
+																					style={{ height: 12, width: 12 }}
+																					color={
+																						riskColors[dangerousnessLevel] ||
+																						"zinc"
+																					}
+																				>
+																					{" "}
+																				</Badge>
+																				<span>{riskStr}</span>
+																			</p>
 																		</div>
-																	) : null}
-																	{matchedDescription ||
-																	ingredient.sources.length > 0 ? (
-																		<div className="max-h-[200px] overflow-auto space-y-4">
-																			{matchedDescription && (
-																				<p className="whitespace-pre-wrap">
-																					{decodeDescription(
-																						matchedDescription,
-																					)}
-																				</p>
-																			)}
-
-																			{ingredient.sources &&
-																				ingredient.sources.length > 0 && (
-																					<ul className="flex flex-col space-y-3 list-disc list-inside">
-																						{ingredient.sources?.map(
-																							(source, i) => (
-																								<li
-																									key={i}
-																									className="text-wrap break-words"
-																								>
-																									{source.year} {source.label}{" "}
-																									{source.url && (
-																										<Link
-																											className="text-blue-500 hover:underline"
-																											target="_blank"
-																											href={source.url}
-																										>
-																											{source.url}
-																										</Link>
-																									)}
-																								</li>
-																							),
-																						)}
-																					</ul>
+																		<div className="flex flex-col p-3 rounded bg-slate-100">
+																			<span>
+																				{decodeDescription(
+																					matchedCategory?.__text,
 																				)}
+																			</span>
+																			<small>
+																				{matchedCategoryDesc
+																					? decodeDescription(
+																							strings.resources.string.find(
+																								(i) =>
+																									i._name ===
+																									matchedCategoryDesc.toString(),
+																							)?.__text,
+																						)
+																					: "N/A"}
+																			</small>
 																		</div>
-																	) : null}
-																</TooltipContent>
-															</Tooltip>
-														) : (
-															ingredient?.name_en
-														);
-													})}
-											</TableCell>
-											<TableCell className="flex flex-row flex-wrap gap-2">
-												<Link
-													className={buttonVariants({ variant: "link" })}
-													target="_blank"
-													href={`https://www.heb.com/search?q=${hit.brand} ${hit.name}`}
-												>
-													HEB
-												</Link>
-												<Link
-													className={buttonVariants({ variant: "link" })}
-													target="_blank"
-													href={`https://www.walmart.com/search?q=${hit.brand} ${hit.name}`}
-												>
-													Walmart
-												</Link>
-												<Link
-													className={buttonVariants({ variant: "link" })}
-													target="_blank"
-													href={`https://www.amazon.com/s?k=${hit.brand} ${hit.name}`}
-												>
-													Amazon
-												</Link>
-												<Link
-													className={buttonVariants({ variant: "link" })}
-													target="_blank"
-													href={`https://www.google.com/search?q=${hit.brand} ${hit.name}`}
-												>
-													Google
-												</Link>
-											</TableCell>
-										</TableRow>
-									);
-								})}
-							</TableBody>
-						</Table>
+
+																		<p className="whitespace-pre-wrap">
+																			{decodeDescription(
+																				matchedDescription?.__text,
+																			)}
+																		</p>
+																	</TooltipContent>
+																</Tooltip>
+															) : (
+																addd2?.name
+															);
+														})}
+													{Array.isArray(sortedIngredients) &&
+														sortedIngredients?.map((ingredient) => {
+															const matchedDescription =
+																ingredient.description_en;
+															const matchedCategory =
+																strings.resources.string.find(
+																	(i) => i._name === ingredient?.families[0],
+																);
+															const dangerousnessLevel =
+																ingredient?.dangerousnessLevel || 0;
+															const riskStr = getIngredientRiskLabel(
+																dangerousnessLevel,
+																strings,
+															);
+															const matchedCategoryDesc =
+																getCategoryDescription(
+																	ingredient?.families[0] || "",
+																);
+
+															return ingredient ? (
+																<Tooltip key={ingredient?.id}>
+																	<TooltipTrigger>
+																		<Badge
+																			className="cursor-pointer my-1 mr-1"
+																			color={
+																				ingredientRiskColors[
+																					dangerousnessLevel
+																				] || "zinc"
+																			}
+																		>
+																			{decodeDescription(ingredient.inci)}
+																		</Badge>
+																	</TooltipTrigger>
+																	<TooltipContent className="max-w-sm space-y-4">
+																		<div>
+																			<Heading level={1}>
+																				{decodeDescription(ingredient.inci)}
+																			</Heading>
+																			<p className="space-x-2 flex-row flex items-center">
+																				<Badge
+																					style={{ height: 12, width: 12 }}
+																					color={
+																						ingredientRiskColors[
+																							dangerousnessLevel
+																						] || "zinc"
+																					}
+																				>
+																					{" "}
+																				</Badge>
+																				<span>{riskStr}</span>
+																			</p>
+																		</div>
+																		{ingredient.carcinogen ||
+																		ingredient.allergen ||
+																		ingredient.irritant ||
+																		ingredient.endocrineDisruptor ? (
+																			<div className="flex flex-row space-x-2">
+																				{ingredient.carcinogen && (
+																					<div className="p-2 rounded bg-slate-100">
+																						Carcinogen
+																					</div>
+																				)}
+																				{ingredient.allergen && (
+																					<div className="p-2 rounded bg-slate-100">
+																						Allergen
+																					</div>
+																				)}
+																				{ingredient.irritant && (
+																					<div className="p-2 rounded bg-slate-100">
+																						Irritant
+																					</div>
+																				)}
+																				{ingredient.endocrineDisruptor && (
+																					<div className="p-2 rounded bg-slate-100">
+																						Endocrine Disruptor
+																					</div>
+																				)}
+																			</div>
+																		) : null}
+																		{matchedDescription ||
+																		ingredient.sources.length > 0 ? (
+																			<div className="max-h-[200px] overflow-auto space-y-4">
+																				{matchedDescription && (
+																					<p className="whitespace-pre-wrap">
+																						{decodeDescription(
+																							matchedDescription,
+																						)}
+																					</p>
+																				)}
+
+																				{ingredient.sources &&
+																					ingredient.sources.length > 0 && (
+																						<ul className="flex flex-col space-y-3 list-disc list-inside">
+																							{ingredient.sources?.map(
+																								(source, i) => (
+																									<li
+																										key={i}
+																										className="text-wrap break-words"
+																									>
+																										{source.year} {source.label}{" "}
+																										{source.url && (
+																											<Link
+																												className="text-blue-500 hover:underline"
+																												target="_blank"
+																												href={source.url}
+																											>
+																												{source.url}
+																											</Link>
+																										)}
+																									</li>
+																								),
+																							)}
+																						</ul>
+																					)}
+																			</div>
+																		) : null}
+																	</TooltipContent>
+																</Tooltip>
+															) : (
+																ingredient?.name_en
+															);
+														})}
+												</TableCell>
+											</TableRow>
+										);
+									})}
+								</TableBody>
+							</Table>
+						</div>
 					</div>
 				</div>
 			</div>
