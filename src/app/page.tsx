@@ -115,7 +115,7 @@ const getInitialMaxGrade = () => {
 	return 100;
 };
 
-const risk = {
+const risk: { [key: number]: string } = {
 	1: "risk_high",
 	2: "risk_medium",
 	3: "risk_limited",
@@ -147,7 +147,7 @@ const riskColors: { [key: number]: BadgeProps["color"] } = {
     }
 				*/
 
-const ingredientRisks = {
+const ingredientRisks: { [key: number]: string } = {
 	1: "risk_high",
 	2: "risk_medium",
 	3: "risk_low",
@@ -225,7 +225,7 @@ const getCategoryDescription = (category: string): string | null =>
 	categoryDescriptions[category] || null;
 
 const SearchPage: FC = () => {
-	const [query, setQuery] = useState();
+	const [query, setQuery] = useState("");
 	const [foodOnly, setFoodOnly] = useState(true);
 	const [minGrade, setMinGrade] = useState(80);
 	const [maxGrade, setMaxGrade] = useState(100);
@@ -424,7 +424,7 @@ const SearchPage: FC = () => {
 								</TableHead>
 								<TableBody>
 									{result?.map((hit) => {
-										const sortedAdditives: typeof additives =
+										const sortedAdditives =
 											"additives" in hit &&
 											hit.additives
 												.map((key) => {
@@ -440,7 +440,7 @@ const SearchPage: FC = () => {
 														(b?.dangerousnessLevel || 0),
 												);
 
-										const sortedIngredients: typeof ingredients =
+										const sortedIngredients =
 											"ingredients" in hit &&
 											hit.ingredients
 												.map((key) => {
@@ -631,13 +631,13 @@ const SearchPage: FC = () => {
 																	</TooltipContent>
 																</Tooltip>
 															) : (
-																addd2?.name
+																addd2?.code
 															);
 														})}
 													{Array.isArray(sortedIngredients) &&
 														sortedIngredients?.map((ingredient) => {
 															const matchedDescription =
-																ingredient.description_en;
+																ingredient?.description_en;
 															const matchedCategory =
 																strings.resources.string.find(
 																	(i) => i._name === ingredient?.families[0],
@@ -753,7 +753,7 @@ const SearchPage: FC = () => {
 																	</TooltipContent>
 																</Tooltip>
 															) : (
-																ingredient?.name_en
+																ingredient
 															);
 														})}
 												</TableCell>
