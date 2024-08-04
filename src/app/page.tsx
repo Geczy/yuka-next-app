@@ -1,10 +1,8 @@
 "use client";
 
-import prisma from '@/lib/db';
 import type { realmcosmeticsproduct, realmfoodproduct } from '@prisma/client';
 import Image from 'next/image';
-import { type FC, type FormEvent, useEffect, useMemo, useState } from "react";
-import React from "react";
+import { type FC, type FormEvent, useEffect, useState } from "react";
 import useSWR from "swr";
 import strings from "../assets/strings.json";
 import { Button } from "./components/button";
