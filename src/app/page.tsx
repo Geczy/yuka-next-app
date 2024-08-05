@@ -58,7 +58,13 @@ import type {
 import { AlertCircle, ExternalLinkIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { type FC, type FormEvent, useEffect, useState } from "react";
+import {
+  type ChangeEvent,
+  type FC,
+  type FormEvent,
+  useEffect,
+  useState,
+} from "react";
 import useSWR from "swr";
 import strings from "../assets/strings.json";
 
@@ -436,7 +442,9 @@ const SearchForm: FC<{
           <Field className="w-full space-y-3">
             <Label>Min grade {minGrade}</Label>
             <Slider
-              onChange={(e) => setMinGrade(Number.parseInt(e.target.value))}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                setMinGrade(Number.parseInt(e.target.value))
+              }
               defaultValue={[minGrade]}
               max={100}
               min={0}
@@ -446,7 +454,9 @@ const SearchForm: FC<{
           <Field className="w-full space-y-3">
             <Label>Max grade {maxGrade}</Label>
             <Slider
-              onChange={(e) => setMaxGrade(Number.parseInt(e.target.value))}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                setMaxGrade(Number.parseInt(e.target.value))
+              }
               defaultValue={[maxGrade]}
               max={100}
               min={0}
