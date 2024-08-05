@@ -292,7 +292,7 @@ const SearchPage: FC = () => {
                 hasMore={hasMore}
                 goToPage={goToPage}
               />
-              <Table>
+              <Table className="overflow-x-auto">
                 <TableHead>
                   <TableRow>
                     <TableHeader />
@@ -301,6 +301,7 @@ const SearchPage: FC = () => {
                     <TableHeader>
                       {foodOnly ? "Additives" : "Ingredients"}
                     </TableHeader>
+                    <TableHeader>Links</TableHeader>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -328,9 +329,7 @@ const SearchPage: FC = () => {
                         <TableCell>
                           <div className="flex flex-row space-x-2">
                             <div className="flex flex-col">
-                              <span>
-                                {generateExternalLinks(hit.brand, hit.name)}
-                              </span>
+                              <span>{hit.name}</span>
                               <small>{hit.brand}</small>
                             </div>
                           </div>
@@ -356,6 +355,9 @@ const SearchPage: FC = () => {
                             sortedAdditives.map(generateTooltip)}
                           {Array.isArray(sortedIngredients) &&
                             sortedIngredients.map(generateTooltip)}
+                        </TableCell>
+                        <TableCell>
+                          {generateExternalLinks(hit.brand, hit.name)}
                         </TableCell>
                       </TableRow>
                     );
@@ -394,7 +396,7 @@ const SearchForm: FC<{
   setMinGrade,
   setMaxGrade,
 }) => (
-  <form onSubmit={handleSearch} className="md:w-1/3">
+  <form onSubmit={handleSearch} className="md:w-1/3 w-full">
     <Fieldset>
       <Legend>Product search</Legend>
       <Text>By default, only showing 75 grades and above.</Text>
@@ -550,29 +552,17 @@ const generateExternalLinks = (brand: string | null, name: string) => {
     },
   ];
 
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger>
-        <Button className="pl-0 pb-0" variant="link" size="sm">
-          {name}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        {links.map((link) => (
-          <DropdownMenuItem key={link.href} asChild className="cursor-pointer">
-            <Link
-              className={cn(buttonVariants({ variant: "link", size: "sm" }))}
-              target="_blank"
-              href={link.href}
-            >
-              <span>{link.label}</span>
-              <ExternalLinkIcon className="ml-2 h-3 w-3" />
-            </Link>
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
+  return links.map((link) => (
+    <Link
+      key={link.href}
+      className={cn(buttonVariants({ variant: "link", size: "sm" }))}
+      target="_blank"
+      href={link.href}
+    >
+      <span>{link.label}</span>
+      <ExternalLinkIcon className="ml-2 h-3 w-3" />
+    </Link>
+  ));
 };
 
 const generateTooltip = (item: additive | ingredient) => {
