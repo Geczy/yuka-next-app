@@ -17,17 +17,78 @@ const Tooltip = ({
 	const [open, setOpen] = React.useState(false);
 
 	return (
-		<TooltipPrimitive.Root
-			open={alwaysOpen || open}
-			delayDuration={0}
-			onOpenChange={setOpen}
-		>
-			<div onClick={() => setOpen(true)}>{children}</div>
+		<TooltipPrimitive.Root open={alwaysOpen || open} onOpenChange={setOpen}>
+			<div
+				onClick={(e) => {
+					setOpen(true);
+				}}
+				onKeyUp={(e) => {
+					if (e.key === "Enter" || e.key === " ") {
+						setOpen(true);
+					}
+				}}
+				onKeyDown={(e) => {
+					if (e.key === "Enter" || e.key === " ") {
+						setOpen(true);
+					}
+				}}
+			>
+				{children}
+			</div>
 		</TooltipPrimitive.Root>
 	);
 };
 
-const TooltipTrigger = TooltipPrimitive.Trigger;
+const TooltipTrigger = ({
+	onClick,
+	onFocus,
+	onBlur,
+	onKeyUp,
+	onKeyDown,
+	children,
+}: {
+	onClick?: React.MouseEventHandler<HTMLDivElement>;
+	onFocus?: React.FocusEventHandler<HTMLDivElement>;
+	onBlur?: React.FocusEventHandler<HTMLDivElement>;
+	onKeyUp?: React.KeyboardEventHandler<HTMLDivElement>;
+	onKeyDown?: React.KeyboardEventHandler<HTMLDivElement>;
+	children: React.ReactNode;
+}) => {
+	const [open, setOpen] = React.useState(false);
+
+	const handleKeyEvents = (event: React.KeyboardEvent<HTMLDivElement>) => {
+		if (onKeyUp) onKeyUp(event);
+		if (onKeyDown) onKeyDown(event);
+		if (event.key === "Enter" || event.key === " ") {
+			setOpen((prevOpen) => !prevOpen);
+		}
+	};
+
+	return (
+		<TooltipPrimitive.Trigger asChild>
+			<div
+				tabIndex={0}
+				role="button"
+				onClick={(e) => {
+					setOpen((prevOpen) => !prevOpen);
+					if (onClick) onClick(e);
+				}}
+				onFocus={(e) => {
+					setTimeout(() => setOpen(true), 0);
+					if (onFocus) onFocus(e);
+				}}
+				onBlur={(e) => {
+					setOpen(false);
+					if (onBlur) onBlur(e);
+				}}
+				onKeyUp={handleKeyEvents}
+				onKeyDown={handleKeyEvents}
+			>
+				{children}
+			</div>
+		</TooltipPrimitive.Trigger>
+	);
+};
 
 const TooltipContent = React.forwardRef<
 	React.ElementRef<typeof TooltipPrimitive.Content>,

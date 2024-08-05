@@ -340,7 +340,7 @@ const SearchPage: FC = () => {
 	};
 
 	return (
-		<TooltipProvider delayDuration={200}>
+		<TooltipProvider delayDuration={0}>
 			<div className="p-4 md:p-6 lg:p-8">
 				<div className="flex flex-col space-y-8 md:flex-row md:space-y-0 md:space-x-8">
 					<form onSubmit={handleSearch} className="md:w-1/3">
@@ -423,24 +423,7 @@ const SearchPage: FC = () => {
 							</Alert>
 						)}
 						<div className="flex-1 space-y-4">
-							<Pagination>
-								<PaginationContent>
-									<PaginationItem>
-										<PaginationPrevious
-											className="cursor-pointer"
-											onClick={() => goToPage(page - 1)}
-											isActive={page !== 1}
-										/>
-									</PaginationItem>
-									<PaginationItem>
-										<PaginationNext
-											className="cursor-pointer"
-											onClick={() => goToPage(page + 1)}
-											isActive={hasMore}
-										/>
-									</PaginationItem>
-								</PaginationContent>
-							</Pagination>
+							{renderPagination()}
 
 							<Table>
 								<TableHead>
@@ -859,30 +842,38 @@ const SearchPage: FC = () => {
 									})}
 								</TableBody>
 							</Table>
-							<Pagination>
-								<PaginationContent>
-									<PaginationItem>
-										<PaginationPrevious
-											className="cursor-pointer"
-											onClick={() => goToPage(page - 1)}
-											isActive={page !== 1}
-										/>
-									</PaginationItem>
-									<PaginationItem>
-										<PaginationNext
-											className="cursor-pointer"
-											onClick={() => goToPage(page + 1)}
-											isActive={hasMore}
-										/>
-									</PaginationItem>
-								</PaginationContent>
-							</Pagination>
+							{renderPagination()}
 						</div>
 					</div>
 				</div>
 			</div>
 		</TooltipProvider>
 	);
+
+	function renderPagination() {
+		return (
+			<Pagination>
+				<PaginationContent>
+					<PaginationItem>
+						<PaginationPrevious
+							disabled={page === 1}
+							className="cursor-pointer"
+							onClick={() => goToPage(page - 1)}
+							isActive={page !== 1}
+						/>
+					</PaginationItem>
+					<PaginationItem>
+						<PaginationNext
+							disabled={!hasMore}
+							className="cursor-pointer"
+							onClick={() => goToPage(page + 1)}
+							isActive={hasMore}
+						/>
+					</PaginationItem>
+				</PaginationContent>
+			</Pagination>
+		);
+	}
 };
 
 export default SearchPage;
