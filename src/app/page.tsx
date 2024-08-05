@@ -316,7 +316,7 @@ const SearchPage: FC = () => {
                       sortAdditivesOrIngredients(hit.ingredients, ingredients);
                     return (
                       <TableRow key={`term-${hit.id}`}>
-                        <TableCell className="space-y-2">
+                        <TableCell>
                           <div className="relative w-28 h-28 max-w-28">
                             <Image
                               src={`https://mgates.me/yuka/${hit.id}.jpg`}
@@ -351,11 +351,17 @@ const SearchPage: FC = () => {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="flex flex-row flex-wrap items-center max-h-[150px] overflow-auto">
-                          {Array.isArray(sortedAdditives) &&
-                            sortedAdditives.map(generateTooltip)}
-                          {Array.isArray(sortedIngredients) &&
-                            sortedIngredients.map(generateTooltip)}
+                        <TableCell>
+                          <div className="flex flex-row flex-wrap items-center max-h-[150px] overflow-auto">
+                            {Array.isArray(sortedAdditives) &&
+                            sortedAdditives.length > 0 ? (
+                              sortedAdditives.map(generateTooltip)
+                            ) : (
+                              <Badge color="zinc">No additives</Badge>
+                            )}
+                            {Array.isArray(sortedIngredients) &&
+                              sortedIngredients.map(generateTooltip)}
+                          </div>
                         </TableCell>
                         <TableCell>
                           {generateExternalLinks(hit.brand, hit.name)}
