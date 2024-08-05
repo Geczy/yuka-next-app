@@ -1,7 +1,19 @@
 "use client";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Field,
   FieldGroup,
@@ -309,17 +321,16 @@ const SearchPage: FC = () => {
                               alt={hit.name}
                               layout="fill"
                               objectFit="contain"
-                              className="rounded"
+                              className="rounded-xl"
                             />
-                          </div>
-                          <div className="flex flex-row flex-wrap">
-                            {generateExternalLinks(hit.brand, hit.name)}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-row space-x-2">
                             <div className="flex flex-col">
-                              <span>{hit.name}</span>
+                              <span>
+                                {generateExternalLinks(hit.brand, hit.name)}
+                              </span>
                               <small>{hit.brand}</small>
                             </div>
                           </div>
@@ -340,7 +351,7 @@ const SearchPage: FC = () => {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="flex flex-row flex-wrap items-center">
+                        <TableCell className="flex flex-row flex-wrap items-center max-h-[150px] overflow-auto">
                           {Array.isArray(sortedAdditives) &&
                             sortedAdditives.map(generateTooltip)}
                           {Array.isArray(sortedIngredients) &&
@@ -539,20 +550,29 @@ const generateExternalLinks = (brand: string | null, name: string) => {
     },
   ];
 
-  return links.map((link) => (
-    <Link
-      key={link.href}
-      className={cn(
-        buttonVariants({ variant: "link", size: "sm" }),
-        "space-x-1",
-      )}
-      target="_blank"
-      href={link.href}
-    >
-      <span>{link.label}</span>
-      <ExternalLinkIcon className="h-3 w-3" />
-    </Link>
-  ));
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger>
+        <Button className="pl-0 pb-0" variant="link" size="sm">
+          {name}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        {links.map((link) => (
+          <DropdownMenuItem key={link.href} asChild className="cursor-pointer">
+            <Link
+              className={cn(buttonVariants({ variant: "link", size: "sm" }))}
+              target="_blank"
+              href={link.href}
+            >
+              <span>{link.label}</span>
+              <ExternalLinkIcon className="ml-2 h-3 w-3" />
+            </Link>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 };
 
 const generateTooltip = (item: additive | ingredient) => {
@@ -638,22 +658,31 @@ const generateTooltip = (item: additive | ingredient) => {
             {decodeDescription(matchedDescription)}
           </p>
           {sources.length > 0 && (
-            <ul className="flex flex-col space-y-3 list-disc list-inside">
-              {sources.map((source) => (
-                <li key={source.label} className="text-wrap break-words">
-                  {source.year} {source.label}{" "}
-                  {source.url && (
-                    <Link
-                      className="text-blue-500 hover:underline"
-                      target="_blank"
-                      href={source.url}
-                    >
-                      {source.url}
-                    </Link>
-                  )}
-                </li>
-              ))}
-            </ul>
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="item-1">
+                <AccordionTrigger className="text-blue-500 hover:underline">
+                  View sources...
+                </AccordionTrigger>
+                <AccordionContent>
+                  <ul className="flex flex-col space-y-3 list-disc list-inside">
+                    {sources.map((source) => (
+                      <li key={source.label} className="text-wrap break-words">
+                        {source.year} {source.label}{" "}
+                        {source.url && (
+                          <Link
+                            className="text-blue-500 hover:underline"
+                            target="_blank"
+                            href={source.url}
+                          >
+                            {source.url}
+                          </Link>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           )}
         </div>
       </TooltipContent>
