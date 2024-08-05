@@ -32,6 +32,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Slider } from "@/components/ui/slider";
 import {
   Table,
   TableBody,
@@ -398,61 +399,55 @@ const SearchForm: FC<{
 }) => (
   <form onSubmit={handleSearch} className="md:w-1/3 w-full">
     <Fieldset>
-      <Legend>Product search</Legend>
-      <Text>By default, only showing 75 grades and above.</Text>
       <FieldGroup>
-        <Field>
-          <Label>Type</Label>
-          <Listbox
-            className="w-full md:max-w-xs"
-            onChange={toggleFoodOnly}
-            value={foodOnly ? "food" : "cosmetics"}
-            name="status"
-            defaultValue="food"
-          >
-            <ListboxOption value="food">
-              <ListboxLabel>Food</ListboxLabel>
-            </ListboxOption>
-            <ListboxOption value="cosmetics">
-              <ListboxLabel>Cosmetics</ListboxLabel>
-            </ListboxOption>
-          </Listbox>
-        </Field>
-        <Field>
-          <Label>Name</Label>
-          <Input
-            defaultValue={query}
-            className="w-full md:max-w-xs"
-            name="query"
-            placeholder="Search by product name..."
-          />
-        </Field>
-        <Field>
-          <Label>Min Grade</Label>
-          <Input
-            type="number"
-            min={0}
-            max={100}
-            defaultValue={minGrade}
-            className="w-full md:max-w-xs"
-            name="minGrade"
-            placeholder="Minimum grade..."
-            onChange={(e) => setMinGrade(Number.parseInt(e.target.value))}
-          />
-        </Field>
-        <Field>
-          <Label>Max Grade</Label>
-          <Input
-            type="number"
-            min={0}
-            max={100}
-            defaultValue={maxGrade}
-            className="w-full md:max-w-xs"
-            name="maxGrade"
-            placeholder="Maximum grade..."
-            onChange={(e) => setMaxGrade(Number.parseInt(e.target.value))}
-          />
-        </Field>
+        <div className="flex col justify-between space-x-4">
+          <Field className="w-full">
+            <Label>Name</Label>
+            <Input
+              defaultValue={query}
+              name="query"
+              placeholder="Search by product name..."
+            />
+          </Field>
+          <Field className="w-full">
+            <Label>Type</Label>
+            <Listbox
+              onChange={toggleFoodOnly}
+              value={foodOnly ? "food" : "cosmetics"}
+              name="status"
+              defaultValue="food"
+            >
+              <ListboxOption value="food">
+                <ListboxLabel>Food</ListboxLabel>
+              </ListboxOption>
+              <ListboxOption value="cosmetics">
+                <ListboxLabel>Cosmetics</ListboxLabel>
+              </ListboxOption>
+            </Listbox>
+          </Field>
+        </div>
+        <div className="flex col justify-between space-x-4">
+          <Field className="w-full space-y-3">
+            <Label>Min grade {minGrade}</Label>
+            <Slider
+              onChange={(e) => setMinGrade(Number.parseInt(e.target.value))}
+              defaultValue={[minGrade]}
+              max={100}
+              min={0}
+              step={1}
+            />
+          </Field>
+          <Field className="w-full space-y-3">
+            <Label>Max grade {maxGrade}</Label>
+            <Slider
+              onChange={(e) => setMaxGrade(Number.parseInt(e.target.value))}
+              defaultValue={[maxGrade]}
+              max={100}
+              min={0}
+              step={1}
+            />
+          </Field>
+        </div>
       </FieldGroup>
     </Fieldset>
     <Button className="mt-4" type="submit">
