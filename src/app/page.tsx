@@ -51,10 +51,8 @@ import strings from "../assets/strings.json";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-// Type guard for Ingredient
-function isIngredient(item: additive | ingredient): item is ingredient {
-  return (item as ingredient).inci !== undefined;
-}
+const isIngredient = (item: additive | ingredient): item is ingredient =>
+  "inci" in item;
 
 const decodeDescription = (description?: string | null): string =>
   description
@@ -64,13 +62,12 @@ const decodeDescription = (description?: string | null): string =>
         .replace(/\\'/g, "'")
     : "";
 
-const getGradeCategory = (num?: number | null): string => {
-  if (num === undefined || num === null) return "Unknown";
-  if (num >= 75) return "Excellent";
-  if (num >= 50) return "Good";
-  if (num >= 25) return "Poor";
-  if (num >= 0) return "Bad";
-  return "Unknown";
+const getGradeCategory = (grade?: number | null): string => {
+  if (grade == null) return "Unknown";
+  if (grade >= 75) return "Excellent";
+  if (grade >= 50) return "Good";
+  if (grade >= 25) return "Poor";
+  return "Bad";
 };
 
 const getInitialParams = () => {
@@ -114,7 +111,7 @@ const getRiskLabel = (level: number) => {
 };
 
 const getGradeColor = (grade?: number | null): BadgeProps["color"] => {
-  if (grade === null || grade === undefined) return "zinc";
+  if (grade == null) return "zinc";
   if (grade >= 75) return "green";
   if (grade >= 50) return "yellow";
   if (grade >= 25) return "orange";
@@ -188,11 +185,7 @@ const SearchPage: FC = () => {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (query) {
-      params.set("query", query);
-    } else {
-      params.delete("query");
-    }
+    params.set("query", query);
     params.set("foodOnly", foodOnly.toString());
     params.set("minGrade", minGrade.toString());
     params.set("maxGrade", maxGrade.toString());
@@ -208,9 +201,7 @@ const SearchPage: FC = () => {
     const handlePopState = () => {
       updateStateFromURL();
     };
-
     window.addEventListener("popstate", handlePopState);
-
     return () => {
       window.removeEventListener("popstate", handlePopState);
     };
@@ -222,15 +213,12 @@ const SearchPage: FC = () => {
     const input = form.elements.namedItem("query") as HTMLInputElement;
     const newQuery = input.value;
     const params = new URLSearchParams(window.location.search);
-
     params.set("query", newQuery);
     params.set("foodOnly", foodOnly.toString());
     params.set("minGrade", minGrade.toString());
     params.set("maxGrade", maxGrade.toString());
     params.set("page", "1");
-
     window.history.pushState({}, "", `${window.location.pathname}?${params}`);
-
     setQuery(newQuery);
     setPage(1);
   };
@@ -238,15 +226,12 @@ const SearchPage: FC = () => {
   const toggleFoodOnly = () => {
     const newFoodOnly = !foodOnly;
     const params = new URLSearchParams(window.location.search);
-
     params.set("query", query);
     params.set("foodOnly", newFoodOnly.toString());
     params.set("minGrade", minGrade.toString());
     params.set("maxGrade", maxGrade.toString());
     params.set("page", "1");
-
     window.history.pushState({}, "", `${window.location.pathname}?${params}`);
-
     setFoodOnly(newFoodOnly);
     setPage(1);
   };
@@ -256,13 +241,11 @@ const SearchPage: FC = () => {
     if (newPage > page && !hasMore) return;
     setPage(newPage);
     const params = new URLSearchParams(window.location.search);
-
     params.set("query", query);
     params.set("foodOnly", foodOnly.toString());
     params.set("minGrade", minGrade.toString());
     params.set("maxGrade", maxGrade.toString());
     params.set("page", newPage.toString());
-
     window.history.pushState({}, "", `${window.location.pathname}?${params}`);
   };
 
@@ -270,73 +253,16 @@ const SearchPage: FC = () => {
     <TooltipProvider delayDuration={0}>
       <div className="p-4 md:p-6 lg:p-8">
         <div className="flex flex-col space-y-8 md:flex-row md:space-y-0 md:space-x-8">
-          <form onSubmit={handleSearch} className="md:w-1/3">
-            <Fieldset>
-              <Legend>Product search</Legend>
-              <Text>By default, only showing 75 grades and above.</Text>
-              <FieldGroup>
-                <Field>
-                  <Label>Type</Label>
-                  <Listbox
-                    className="w-full md:max-w-xs"
-                    onChange={toggleFoodOnly}
-                    value={foodOnly ? "food" : "cosmetics"}
-                    name="status"
-                    defaultValue="food"
-                  >
-                    <ListboxOption value="food">
-                      <ListboxLabel>Food</ListboxLabel>
-                    </ListboxOption>
-                    <ListboxOption value="cosmetics">
-                      <ListboxLabel>Cosmetics</ListboxLabel>
-                    </ListboxOption>
-                  </Listbox>
-                </Field>
-                <Field>
-                  <Label>Name</Label>
-                  <Input
-                    defaultValue={query}
-                    className="w-full md:max-w-xs"
-                    name="query"
-                    placeholder="Search by product name..."
-                  />
-                </Field>
-                <Field>
-                  <Label>Min Grade</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={100}
-                    defaultValue={minGrade}
-                    className="w-full md:max-w-xs"
-                    name="minGrade"
-                    placeholder="Minimum grade..."
-                    onChange={(e) =>
-                      setMinGrade(Number.parseInt(e.target.value))
-                    }
-                  />
-                </Field>
-                <Field>
-                  <Label>Max Grade</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={100}
-                    defaultValue={maxGrade}
-                    className="w-full md:max-w-xs"
-                    name="maxGrade"
-                    placeholder="Maximum grade..."
-                    onChange={(e) =>
-                      setMaxGrade(Number.parseInt(e.target.value))
-                    }
-                  />
-                </Field>
-              </FieldGroup>
-            </Fieldset>
-            <Button className="mt-4" type="submit">
-              Search
-            </Button>
-          </form>
+          <SearchForm
+            query={query}
+            foodOnly={foodOnly}
+            minGrade={minGrade}
+            maxGrade={maxGrade}
+            handleSearch={handleSearch}
+            toggleFoodOnly={toggleFoodOnly}
+            setMinGrade={setMinGrade}
+            setMaxGrade={setMaxGrade}
+          />
           <div className="flex flex-col space-y-6 w-full">
             {error && (
               <Alert className="max-h-[100px]" variant="destructive">
@@ -374,7 +300,6 @@ const SearchPage: FC = () => {
                     const sortedIngredients =
                       "ingredients" in hit &&
                       sortAdditivesOrIngredients(hit.ingredients, ingredients);
-
                     return (
                       <TableRow key={`term-${hit.id}`}>
                         <TableCell className="space-y-2">
@@ -439,6 +364,90 @@ const SearchPage: FC = () => {
   );
 };
 
+const SearchForm: FC<{
+  query: string;
+  foodOnly: boolean;
+  minGrade: number;
+  maxGrade: number;
+  handleSearch: (e: FormEvent) => void;
+  toggleFoodOnly: () => void;
+  setMinGrade: (grade: number) => void;
+  setMaxGrade: (grade: number) => void;
+}> = ({
+  query,
+  foodOnly,
+  minGrade,
+  maxGrade,
+  handleSearch,
+  toggleFoodOnly,
+  setMinGrade,
+  setMaxGrade,
+}) => (
+  <form onSubmit={handleSearch} className="md:w-1/3">
+    <Fieldset>
+      <Legend>Product search</Legend>
+      <Text>By default, only showing 75 grades and above.</Text>
+      <FieldGroup>
+        <Field>
+          <Label>Type</Label>
+          <Listbox
+            className="w-full md:max-w-xs"
+            onChange={toggleFoodOnly}
+            value={foodOnly ? "food" : "cosmetics"}
+            name="status"
+            defaultValue="food"
+          >
+            <ListboxOption value="food">
+              <ListboxLabel>Food</ListboxLabel>
+            </ListboxOption>
+            <ListboxOption value="cosmetics">
+              <ListboxLabel>Cosmetics</ListboxLabel>
+            </ListboxOption>
+          </Listbox>
+        </Field>
+        <Field>
+          <Label>Name</Label>
+          <Input
+            defaultValue={query}
+            className="w-full md:max-w-xs"
+            name="query"
+            placeholder="Search by product name..."
+          />
+        </Field>
+        <Field>
+          <Label>Min Grade</Label>
+          <Input
+            type="number"
+            min={0}
+            max={100}
+            defaultValue={minGrade}
+            className="w-full md:max-w-xs"
+            name="minGrade"
+            placeholder="Minimum grade..."
+            onChange={(e) => setMinGrade(Number.parseInt(e.target.value))}
+          />
+        </Field>
+        <Field>
+          <Label>Max Grade</Label>
+          <Input
+            type="number"
+            min={0}
+            max={100}
+            defaultValue={maxGrade}
+            className="w-full md:max-w-xs"
+            name="maxGrade"
+            placeholder="Maximum grade..."
+            onChange={(e) => setMaxGrade(Number.parseInt(e.target.value))}
+          />
+        </Field>
+      </FieldGroup>
+    </Fieldset>
+    <Button className="mt-4" type="submit">
+      Search
+    </Button>
+  </form>
+);
+
 const PaginationComponent: FC<{
   page: number;
   hasMore: boolean;
@@ -468,50 +477,30 @@ const PaginationComponent: FC<{
 
 const LoadingSkeleton: FC = () => (
   <>
-    <TableRow>
-      <TableCell>
-        <div className="flex flex-col space-y-3">
-          <Skeleton className="w-28 h-28 rounded" />
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-[200px]" />
+    {[...Array(4)].map((_, index) => (
+      <TableRow key={index}>
+        <TableCell>
+          <div className="flex flex-col space-y-3">
+            <Skeleton className="w-28 h-28 rounded" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-[200px]" />
+            </div>
           </div>
-        </div>
-      </TableCell>
-      <TableCell>
-        <div className="flex flex-col space-y-2">
-          <Skeleton className="h-4 w-[200px]" />
-          <Skeleton className="h-4 w-[100px]" />
-        </div>
-      </TableCell>
-      <TableCell>
-        <div className="flex flex-col space-y-2">
-          <Skeleton className="h-4 w-[100px]" />
-          <Skeleton className="h-4 w-[100px]" />
-        </div>
-      </TableCell>
-    </TableRow>
-    <TableRow>
-      <TableCell>
-        <div className="flex flex-col space-y-3">
-          <Skeleton className="w-28 h-28 rounded" />
-          <div className="space-y-2">
+        </TableCell>
+        <TableCell>
+          <div className="flex flex-col space-y-2">
             <Skeleton className="h-4 w-[200px]" />
+            <Skeleton className="h-4 w-[100px]" />
           </div>
-        </div>
-      </TableCell>
-      <TableCell>
-        <div className="flex flex-col space-y-2">
-          <Skeleton className="h-4 w-[200px]" />
-          <Skeleton className="h-4 w-[100px]" />
-        </div>
-      </TableCell>
-      <TableCell>
-        <div className="flex flex-col space-y-2">
-          <Skeleton className="h-4 w-[100px]" />
-          <Skeleton className="h-4 w-[100px]" />
-        </div>
-      </TableCell>
-    </TableRow>
+        </TableCell>
+        <TableCell>
+          <div className="flex flex-col space-y-2">
+            <Skeleton className="h-4 w-[100px]" />
+            <Skeleton className="h-4 w-[100px]" />
+          </div>
+        </TableCell>
+      </TableRow>
+    ))}
   </>
 );
 
@@ -567,23 +556,21 @@ const generateExternalLinks = (brand: string | null, name: string) => {
 };
 
 const generateTooltip = (item: additive | ingredient) => {
-  const checkIfIngredient = isIngredient(item);
+  const isIngredientItem = isIngredient(item);
   const sources = item?.sources || [];
   const dangerousnessLevel = item?.dangerousnessLevel || 0;
   const riskStr = getRiskLabel(dangerousnessLevel);
-  const description = checkIfIngredient
+  const description = isIngredientItem
     ? item.inci
     : strings.resources.string.find((i) => i._name === item?.nameKey)?.__text;
-  const matchedDescription = checkIfIngredient
+  const matchedDescription = isIngredientItem
     ? item?.description_en
     : strings.resources.string.find(
         (i) => i._name === item?.shortDescriptionKey,
       )?.__text;
 
-  const IngredientSpecificContent = () => {
-    if (!checkIfIngredient) return null;
-
-    return (
+  const IngredientSpecificContent = () =>
+    isIngredientItem && (
       <div className="flex flex-row space-x-2">
         {item.carcinogen && (
           <div className="p-2 rounded bg-slate-100">Carcinogen</div>
@@ -599,10 +586,9 @@ const generateTooltip = (item: additive | ingredient) => {
         )}
       </div>
     );
-  };
 
   const AdditiveSpecificContent = () => {
-    if (checkIfIngredient) return null;
+    if (isIngredientItem) return null;
 
     const matchedCategory = strings.resources.string.find(
       (i) => i._name === item?.category,
@@ -672,7 +658,7 @@ const generateTooltip = (item: additive | ingredient) => {
         </div>
       </TooltipContent>
     </Tooltip>
-  ) : checkIfIngredient ? (
+  ) : isIngredientItem ? (
     item.inci
   ) : (
     item.code
