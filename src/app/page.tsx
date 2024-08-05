@@ -213,22 +213,6 @@ const SearchPage: FC = () => {
     };
   }, []);
 
-  const handleSearch = (e: FormEvent) => {
-    e.preventDefault();
-    const form = e.target as HTMLFormElement;
-    const input = form.elements.namedItem("query") as HTMLInputElement;
-    const newQuery = input.value;
-    const params = new URLSearchParams(window.location.search);
-    params.set("query", newQuery);
-    params.set("foodOnly", foodOnly.toString());
-    params.set("minGrade", minGrade.toString());
-    params.set("maxGrade", maxGrade.toString());
-    params.set("page", "1");
-    window.history.pushState({}, "", `${window.location.pathname}?${params}`);
-    setQuery(newQuery);
-    setPage(1);
-  };
-
   const toggleFoodOnly = () => {
     const newFoodOnly = !foodOnly;
     const params = new URLSearchParams(window.location.search);
@@ -264,7 +248,7 @@ const SearchPage: FC = () => {
             foodOnly={foodOnly}
             minGrade={minGrade}
             maxGrade={maxGrade}
-            handleSearch={handleSearch}
+            setQuery={setQuery}
             toggleFoodOnly={toggleFoodOnly}
             setMinGrade={setMinGrade}
             setMaxGrade={setMaxGrade}
@@ -382,8 +366,8 @@ const SearchForm: FC<{
   foodOnly: boolean;
   minGrade: number;
   maxGrade: number;
-  handleSearch: (e: FormEvent) => void;
   toggleFoodOnly: () => void;
+  setQuery: (query: string) => void;
   setMinGrade: (grade: number) => void;
   setMaxGrade: (grade: number) => void;
 }> = ({
@@ -391,18 +375,21 @@ const SearchForm: FC<{
   foodOnly,
   minGrade,
   maxGrade,
-  handleSearch,
+  setQuery,
   toggleFoodOnly,
   setMinGrade,
   setMaxGrade,
 }) => (
-  <form onSubmit={handleSearch} className="md:w-1/3 w-full">
+  <form className="md:w-1/3 w-full">
     <Fieldset>
       <FieldGroup>
         <div className="flex col justify-between space-x-4">
           <Field className="w-full">
             <Label>Name</Label>
             <Input
+              onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                setQuery(e.target.value);
+              }}
               defaultValue={query}
               name="query"
               placeholder="Search by product name..."
@@ -453,9 +440,6 @@ const SearchForm: FC<{
         </div>
       </FieldGroup>
     </Fieldset>
-    <Button className="mt-4" type="submit">
-      Search
-    </Button>
   </form>
 );
 
