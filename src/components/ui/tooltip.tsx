@@ -17,7 +17,11 @@ const Tooltip = ({
   const [open, setOpen] = React.useState(false);
 
   return (
-    <TooltipPrimitive.Root open={alwaysOpen || open} onOpenChange={setOpen}>
+    <TooltipPrimitive.Root
+      open={alwaysOpen || open}
+      delayDuration={0}
+      onOpenChange={setOpen}
+    >
       <div
         onClick={(e) => {
           setOpen(true);
