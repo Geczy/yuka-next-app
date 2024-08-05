@@ -15,9 +15,7 @@ import { Listbox, ListboxLabel, ListboxOption } from "@/components/ui/listbox";
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
-  PaginationLink,
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
@@ -44,7 +42,7 @@ import type {
   realmcosmeticsproduct,
   realmfoodproduct,
 } from "@prisma/client";
-import { AlertCircle, ExternalLinkIcon, LoaderCircle } from "lucide-react";
+import { AlertCircle, ExternalLinkIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { type FC, type FormEvent, useEffect, useState } from "react";
@@ -53,148 +51,77 @@ import strings from "../assets/strings.json";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-function decodeDescription(description?: string | null): string {
-  if (!description) {
-    return "";
-  }
-
-  // Replace escape sequences with their corresponding characters
-  return description
-    .replace(/\\10/g, "\n") // \10 is often used to represent a new line
-    .replace(/\\"/g, '"')
-    .replace(/\\'/g, "'");
+// Type guard for Ingredient
+function isIngredient(item: additive | ingredient): item is ingredient {
+  return (item as ingredient).inci !== undefined;
 }
 
+const decodeDescription = (description?: string | null): string =>
+  description
+    ? description
+        .replace(/\\10/g, "\n")
+        .replace(/\\"/g, '"')
+        .replace(/\\'/g, "'")
+    : "";
+
 const getGradeCategory = (num?: number | null): string => {
-  if (num === undefined || num === null) {
-    return "Unknown";
-  }
-  if (num >= 75) {
-    return "Excellent";
-  }
-  if (num >= 50) {
-    return "Good";
-  }
-  if (num >= 25) {
-    return "Poor";
-  }
-  if (num >= 0) {
-    return "Bad";
-  }
-  if (num === -1) {
-    return "NoGrade";
-  }
+  if (num === undefined || num === null) return "Unknown";
+  if (num >= 75) return "Excellent";
+  if (num >= 50) return "Good";
+  if (num >= 25) return "Poor";
+  if (num >= 0) return "Bad";
   return "Unknown";
 };
 
-const getInitialQuery = () => {
+const getInitialParams = () => {
   if (typeof window !== "undefined") {
     const params = new URLSearchParams(window.location.search);
-    return params.get("query") || "";
+    return {
+      query: params.get("query") || "",
+      foodOnly: params.get("foodOnly") !== "false",
+      minGrade: Number.parseInt(params.get("minGrade") || "80"),
+      maxGrade: Number.parseInt(params.get("maxGrade") || "100"),
+    };
   }
-  return "";
+  return {
+    query: "",
+    foodOnly: true,
+    minGrade: 80,
+    maxGrade: 100,
+  };
 };
 
-const getInitialFoodOnly = () => {
-  if (typeof window !== "undefined") {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("foodOnly") === undefined) {
-      return true;
-    }
-
-    if (params.get("foodOnly") === "false") {
-      return false;
-    }
-  }
-  return true;
-};
-
-const getInitialMinGrade = () => {
-  if (typeof window !== "undefined") {
-    const params = new URLSearchParams(window.location.search);
-    return Number.parseInt(params.get("minGrade") || "80");
-  }
-  return 80;
-};
-
-const getInitialMaxGrade = () => {
-  if (typeof window !== "undefined") {
-    const params = new URLSearchParams(window.location.search);
-    return Number.parseInt(params.get("maxGrade") || "100");
-  }
-  return 100;
-};
-
-const risk: { [key: number]: string } = {
+const riskLabels: Record<number, string> = {
   1: "risk_high",
   2: "risk_medium",
   3: "risk_limited",
   4: "risk_none",
 };
 
-const riskColors: { [key: number]: BadgeProps["color"] } = {
+const riskColors: Record<number, BadgeProps["color"]> = {
+  0: "zinc",
   1: "red",
   2: "orange",
   3: "yellow",
   4: "green",
 };
 
-const ingredientRisks: { [key: number]: string } = {
-  1: "risk_high",
-  2: "risk_medium",
-  3: "risk_low",
-  4: "risk_none",
+const getRiskLabel = (level: number) => {
+  const riskKey = riskLabels[level];
+  return riskKey
+    ? strings.resources.string.find((i) => i._name === riskKey)?.__text || ""
+    : "";
 };
 
-const ingredientRiskColors: { [key: number]: BadgeProps["color"] } = {
-  1: "red",
-  2: "orange",
-  3: "yellow",
-  4: "green",
-};
-
-function getIngredientRiskLabel(i10: number, strings: any) {
-  const riskKey = ingredientRisks[i10];
-  if (!riskKey) {
-    return "";
-  }
-  return (
-    strings.resources.string.find((i: any) => i._name === riskKey)?.__text || ""
-  );
-}
-
-function getDangerousnessLabel(dangerousnessLevel: number, strings: any) {
-  const riskKey = risk[dangerousnessLevel];
-  if (!riskKey) {
-    return "";
-  }
-  return (
-    strings.resources.string.find((i: any) => i._name === riskKey)?.__text || ""
-  );
-}
-
-// Get the color of the grade using the risk colors const riskColors
 const getGradeColor = (grade?: number | null): BadgeProps["color"] => {
-  if (grade === null || grade === undefined) {
-    return "zinc";
-  }
-  if (grade >= 75) {
-    return "green";
-  }
-  if (grade >= 50) {
-    return "yellow";
-  }
-  if (grade >= 25) {
-    return "orange";
-  }
-  if (grade >= 0) {
-    return "red";
-  }
-
-  return "zinc";
+  if (grade === null || grade === undefined) return "zinc";
+  if (grade >= 75) return "green";
+  if (grade >= 50) return "yellow";
+  if (grade >= 25) return "orange";
+  return "red";
 };
 
-const categoryDescriptions: { [key: string]: string } = {
+const categoryDescriptions: Record<string, string> = {
   additive_category_texture_agent: "additive_category_texture_agent_desc",
   additive_category_thickening: "additive_category_thickening_desc",
   additive_category_artificial_sweetener: "additive_category_sweeter_desc",
@@ -217,12 +144,20 @@ const getCategoryDescription = (category: string): string | null =>
   categoryDescriptions[category] || null;
 
 const SearchPage: FC = () => {
-  const [query, setQuery] = useState(getInitialQuery());
-  const [foodOnly, setFoodOnly] = useState(getInitialFoodOnly());
-  const [minGrade, setMinGrade] = useState(getInitialMinGrade());
-  const [maxGrade, setMaxGrade] = useState(getInitialMaxGrade());
+  const {
+    query: initialQuery,
+    foodOnly: initialFoodOnly,
+    minGrade: initialMinGrade,
+    maxGrade: initialMaxGrade,
+  } = getInitialParams();
+
+  const [query, setQuery] = useState(initialQuery);
+  const [foodOnly, setFoodOnly] = useState(initialFoodOnly);
+  const [minGrade, setMinGrade] = useState(initialMinGrade);
+  const [maxGrade, setMaxGrade] = useState(initialMaxGrade);
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
+
   const {
     data: { result, additives, ingredients, hasMore } = {
       result: [],
@@ -245,11 +180,7 @@ const SearchPage: FC = () => {
   const updateStateFromURL = () => {
     const params = new URLSearchParams(window.location.search);
     setQuery(params.get("query") || "");
-    setFoodOnly(
-      params.get("foodOnly") === "undefined"
-        ? true
-        : params.get("foodOnly") === "true",
-    );
+    setFoodOnly(params.get("foodOnly") !== "false");
     setMinGrade(Number.parseInt(params.get("minGrade") || "80"));
     setMaxGrade(Number.parseInt(params.get("maxGrade") || "100"));
     setPage(Number.parseInt(params.get("page") || "1"));
@@ -321,12 +252,8 @@ const SearchPage: FC = () => {
   };
 
   const goToPage = (newPage: number) => {
-    if (newPage < 1) {
-      return;
-    }
-    if (newPage > page && !hasMore) {
-      return;
-    }
+    if (newPage < 1) return;
+    if (newPage > page && !hasMore) return;
     setPage(newPage);
     const params = new URLSearchParams(window.location.search);
 
@@ -347,7 +274,6 @@ const SearchPage: FC = () => {
             <Fieldset>
               <Legend>Product search</Legend>
               <Text>By default, only showing 75 grades and above.</Text>
-
               <FieldGroup>
                 <Field>
                   <Label>Type</Label>
@@ -423,8 +349,11 @@ const SearchPage: FC = () => {
               </Alert>
             )}
             <div className="flex-1 space-y-4">
-              {renderPagination()}
-
+              <PaginationComponent
+                page={page}
+                hasMore={hasMore}
+                goToPage={goToPage}
+              />
               <Table>
                 <TableHead>
                   <TableRow>
@@ -437,86 +366,14 @@ const SearchPage: FC = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {(isLoading || !result) && (
-                    <>
-                      <TableRow>
-                        <TableCell>
-                          <div className="flex flex-col space-y-3">
-                            <Skeleton className="w-28 h-28 rounded" />
-                            <div className="space-y-2">
-                              <Skeleton className="h-4 w-[200px]" />
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col space-y-2">
-                            <Skeleton className="h-4 w-[200px]" />
-                            <Skeleton className="h-4 w-[100px]" />
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col space-y-2">
-                            <Skeleton className="h-4 w-[100px]" />
-                            <Skeleton className="h-4 w-[100px]" />
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>
-                          <div className="flex flex-col space-y-3">
-                            <Skeleton className="w-28 h-28 rounded" />
-                            <div className="space-y-2">
-                              <Skeleton className="h-4 w-[200px]" />
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col space-y-2">
-                            <Skeleton className="h-4 w-[200px]" />
-                            <Skeleton className="h-4 w-[100px]" />
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col space-y-2">
-                            <Skeleton className="h-4 w-[100px]" />
-                            <Skeleton className="h-4 w-[100px]" />
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    </>
-                  )}
+                  {(isLoading || !result) && <LoadingSkeleton />}
                   {result?.map((hit) => {
                     const sortedAdditives =
                       "additives" in hit &&
-                      hit.additives
-                        .map((key) => {
-                          const addd2 = additives.find(
-                            (item) => item.code === key,
-                          );
-                          return addd2;
-                        })
-                        .filter(Boolean) // Remove any undefined values
-                        .sort(
-                          (a, b) =>
-                            (a?.dangerousnessLevel || 0) -
-                            (b?.dangerousnessLevel || 0),
-                        );
-
+                      sortAdditivesOrIngredients(hit.additives, additives);
                     const sortedIngredients =
                       "ingredients" in hit &&
-                      hit.ingredients
-                        .map((key) => {
-                          const ingr2 = ingredients.find(
-                            (item) => item.id_ === key,
-                          );
-                          return ingr2;
-                        })
-                        .filter(Boolean) // Remove any undefined values
-                        .sort(
-                          (a, b) =>
-                            (a?.dangerousnessLevel || 0) -
-                            (b?.dangerousnessLevel || 0),
-                        );
+                      sortAdditivesOrIngredients(hit.ingredients, ingredients);
 
                     return (
                       <TableRow key={`term-${hit.id}`}>
@@ -531,62 +388,7 @@ const SearchPage: FC = () => {
                             />
                           </div>
                           <div className="flex flex-row flex-wrap">
-                            <Link
-                              className={cn(
-                                buttonVariants({
-                                  variant: "link",
-                                  size: "sm",
-                                }),
-                                "space-x-1",
-                              )}
-                              target="_blank"
-                              href={`https://www.heb.com/search?q=${hit.brand} ${hit.name}`}
-                            >
-                              <span>HEB</span>
-                              <ExternalLinkIcon className="h-3 w-3" />
-                            </Link>
-                            <Link
-                              className={cn(
-                                buttonVariants({
-                                  variant: "link",
-                                  size: "sm",
-                                }),
-                                "space-x-1",
-                              )}
-                              target="_blank"
-                              href={`https://www.walmart.com/search?q=${hit.brand} ${hit.name}`}
-                            >
-                              <span>Walmart</span>
-                              <ExternalLinkIcon className="h-3 w-3" />
-                            </Link>
-                            <Link
-                              className={cn(
-                                buttonVariants({
-                                  variant: "link",
-                                  size: "sm",
-                                }),
-                                "space-x-1",
-                              )}
-                              target="_blank"
-                              href={`https://www.amazon.com/s?k=${hit.brand} ${hit.name}`}
-                            >
-                              <span>Amazon</span>
-                              <ExternalLinkIcon className="h-3 w-3" />
-                            </Link>
-                            <Link
-                              className={cn(
-                                buttonVariants({
-                                  variant: "link",
-                                  size: "sm",
-                                }),
-                                "space-x-1",
-                              )}
-                              target="_blank"
-                              href={`https://www.google.com/search?q=${hit.brand} ${hit.name}`}
-                            >
-                              <span>Google</span>
-                              <ExternalLinkIcon className="h-3 w-3" />
-                            </Link>
+                            {generateExternalLinks(hit.brand, hit.name)}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -615,265 +417,266 @@ const SearchPage: FC = () => {
                         </TableCell>
                         <TableCell className="flex flex-row flex-wrap items-center">
                           {Array.isArray(sortedAdditives) &&
-                            sortedAdditives?.map((addd2) => {
-                              const sources = addd2?.sources || [];
-                              const addd = strings.resources.string.find(
-                                (item) => item._name === addd2?.nameKey,
-                              );
-                              const matchedDescription =
-                                strings.resources.string.find(
-                                  (i) => i._name === addd2?.shortDescriptionKey,
-                                );
-                              const matchedCategory =
-                                strings.resources.string.find(
-                                  (i) => i._name === addd2?.category,
-                                );
-                              const dangerousnessLevel =
-                                addd2?.dangerousnessLevel || 0;
-                              const riskStr = getDangerousnessLabel(
-                                dangerousnessLevel,
-                                strings,
-                              );
-                              const matchedCategoryDesc =
-                                getCategoryDescription(addd2?.category || "");
-
-                              return addd ? (
-                                <Tooltip key={addd2?.id}>
-                                  <TooltipTrigger>
-                                    <Badge
-                                      className="cursor-pointer my-1 mr-1"
-                                      color={
-                                        riskColors[dangerousnessLevel] || "zinc"
-                                      }
-                                    >
-                                      {decodeDescription(addd.__text)}
-                                    </Badge>
-                                  </TooltipTrigger>
-                                  <TooltipContent className="max-w-sm space-y-4">
-                                    <div>
-                                      <Heading level={1}>
-                                        {decodeDescription(addd.__text)}
-                                      </Heading>
-                                      <p className="space-x-2 flex-row flex items-center">
-                                        <Badge
-                                          style={{ height: 12, width: 12 }}
-                                          color={
-                                            riskColors[dangerousnessLevel] ||
-                                            "zinc"
-                                          }
-                                        >
-                                          {" "}
-                                        </Badge>
-                                        <span>{riskStr}</span>
-                                      </p>
-                                    </div>
-                                    <div className="flex flex-col p-3 rounded bg-slate-100">
-                                      <span>
-                                        {decodeDescription(
-                                          matchedCategory?.__text,
-                                        )}
-                                      </span>
-                                      <small>
-                                        {matchedCategoryDesc
-                                          ? decodeDescription(
-                                              strings.resources.string.find(
-                                                (i) =>
-                                                  i._name ===
-                                                  matchedCategoryDesc.toString(),
-                                              )?.__text,
-                                            )
-                                          : "N/A"}
-                                      </small>
-                                    </div>
-
-                                    <div className="max-h-[200px] overflow-auto space-y-4">
-                                      <p className="whitespace-pre-wrap">
-                                        {decodeDescription(
-                                          matchedDescription?.__text,
-                                        )}
-                                      </p>
-
-                                      {sources && sources.length > 0 && (
-                                        <ul className="flex flex-col space-y-3 list-disc list-inside">
-                                          {sources?.map((source, i) => (
-                                            <li
-                                              key={i}
-                                              className="text-wrap break-words"
-                                            >
-                                              {source.year} {source.label}{" "}
-                                              {source.url && (
-                                                <Link
-                                                  className="text-blue-500 hover:underline"
-                                                  target="_blank"
-                                                  href={source.url}
-                                                >
-                                                  {source.url}
-                                                </Link>
-                                              )}
-                                            </li>
-                                          ))}
-                                        </ul>
-                                      )}
-                                    </div>
-                                  </TooltipContent>
-                                </Tooltip>
-                              ) : (
-                                addd2?.code
-                              );
-                            })}
+                            sortedAdditives.map(generateTooltip)}
                           {Array.isArray(sortedIngredients) &&
-                            sortedIngredients?.map((ingredient) => {
-                              const matchedDescription =
-                                ingredient?.description_en;
-
-                              const dangerousnessLevel =
-                                ingredient?.dangerousnessLevel || 0;
-                              const riskStr = getIngredientRiskLabel(
-                                dangerousnessLevel,
-                                strings,
-                              );
-
-                              return ingredient ? (
-                                <Tooltip key={ingredient?.id}>
-                                  <TooltipTrigger>
-                                    <Badge
-                                      className="cursor-pointer my-1 mr-1"
-                                      color={
-                                        ingredientRiskColors[
-                                          dangerousnessLevel
-                                        ] || "zinc"
-                                      }
-                                    >
-                                      {decodeDescription(ingredient.inci)}
-                                    </Badge>
-                                  </TooltipTrigger>
-                                  <TooltipContent className="max-w-sm space-y-4">
-                                    <div>
-                                      <Heading level={1}>
-                                        {decodeDescription(ingredient.inci)}
-                                      </Heading>
-                                      <p className="space-x-2 flex-row flex items-center">
-                                        <Badge
-                                          style={{ height: 12, width: 12 }}
-                                          color={
-                                            ingredientRiskColors[
-                                              dangerousnessLevel
-                                            ] || "zinc"
-                                          }
-                                        >
-                                          {" "}
-                                        </Badge>
-                                        <span>{riskStr}</span>
-                                      </p>
-                                    </div>
-                                    {ingredient.carcinogen ||
-                                    ingredient.allergen ||
-                                    ingredient.irritant ||
-                                    ingredient.endocrineDisruptor ? (
-                                      <div className="flex flex-row space-x-2">
-                                        {ingredient.carcinogen && (
-                                          <div className="p-2 rounded bg-slate-100">
-                                            Carcinogen
-                                          </div>
-                                        )}
-                                        {ingredient.allergen && (
-                                          <div className="p-2 rounded bg-slate-100">
-                                            Allergen
-                                          </div>
-                                        )}
-                                        {ingredient.irritant && (
-                                          <div className="p-2 rounded bg-slate-100">
-                                            Irritant
-                                          </div>
-                                        )}
-                                        {ingredient.endocrineDisruptor && (
-                                          <div className="p-2 rounded bg-slate-100">
-                                            Endocrine Disruptor
-                                          </div>
-                                        )}
-                                      </div>
-                                    ) : null}
-                                    {matchedDescription ||
-                                    ingredient.sources.length > 0 ? (
-                                      <div className="max-h-[200px] overflow-auto space-y-4">
-                                        {matchedDescription && (
-                                          <p className="whitespace-pre-wrap">
-                                            {decodeDescription(
-                                              matchedDescription,
-                                            )}
-                                          </p>
-                                        )}
-
-                                        {ingredient.sources &&
-                                          ingredient.sources.length > 0 && (
-                                            <ul className="flex flex-col space-y-3 list-disc list-inside">
-                                              {ingredient.sources?.map(
-                                                (source, i) => (
-                                                  <li
-                                                    key={i}
-                                                    className="text-wrap break-words"
-                                                  >
-                                                    {source.year} {source.label}{" "}
-                                                    {source.url && (
-                                                      <Link
-                                                        className="text-blue-500 hover:underline"
-                                                        target="_blank"
-                                                        href={source.url}
-                                                      >
-                                                        {source.url}
-                                                      </Link>
-                                                    )}
-                                                  </li>
-                                                ),
-                                              )}
-                                            </ul>
-                                          )}
-                                      </div>
-                                    ) : null}
-                                  </TooltipContent>
-                                </Tooltip>
-                              ) : (
-                                ingredient
-                              );
-                            })}
+                            sortedIngredients.map(generateTooltip)}
                         </TableCell>
                       </TableRow>
                     );
                   })}
                 </TableBody>
               </Table>
-              {renderPagination()}
+              <PaginationComponent
+                page={page}
+                hasMore={hasMore}
+                goToPage={goToPage}
+              />
             </div>
           </div>
         </div>
       </div>
     </TooltipProvider>
   );
+};
 
-  function renderPagination() {
+const PaginationComponent: FC<{
+  page: number;
+  hasMore: boolean;
+  goToPage: (page: number) => void;
+}> = ({ page, hasMore, goToPage }) => (
+  <Pagination>
+    <PaginationContent>
+      <PaginationItem>
+        <PaginationPrevious
+          disabled={page === 1}
+          className="cursor-pointer"
+          onClick={() => goToPage(page - 1)}
+          isActive={page !== 1}
+        />
+      </PaginationItem>
+      <PaginationItem>
+        <PaginationNext
+          disabled={!hasMore}
+          className="cursor-pointer"
+          onClick={() => goToPage(page + 1)}
+          isActive={hasMore}
+        />
+      </PaginationItem>
+    </PaginationContent>
+  </Pagination>
+);
+
+const LoadingSkeleton: FC = () => (
+  <>
+    <TableRow>
+      <TableCell>
+        <div className="flex flex-col space-y-3">
+          <Skeleton className="w-28 h-28 rounded" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-[200px]" />
+          </div>
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="flex flex-col space-y-2">
+          <Skeleton className="h-4 w-[200px]" />
+          <Skeleton className="h-4 w-[100px]" />
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="flex flex-col space-y-2">
+          <Skeleton className="h-4 w-[100px]" />
+          <Skeleton className="h-4 w-[100px]" />
+        </div>
+      </TableCell>
+    </TableRow>
+    <TableRow>
+      <TableCell>
+        <div className="flex flex-col space-y-3">
+          <Skeleton className="w-28 h-28 rounded" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-[200px]" />
+          </div>
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="flex flex-col space-y-2">
+          <Skeleton className="h-4 w-[200px]" />
+          <Skeleton className="h-4 w-[100px]" />
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="flex flex-col space-y-2">
+          <Skeleton className="h-4 w-[100px]" />
+          <Skeleton className="h-4 w-[100px]" />
+        </div>
+      </TableCell>
+    </TableRow>
+  </>
+);
+
+const sortAdditivesOrIngredients = (
+  keys: string[],
+  items: additive[] | ingredient[],
+) =>
+  keys
+    .map((key) =>
+      items.find((item) =>
+        !isIngredient(item) ? item.code === key : item.id_ === key,
+      ),
+    )
+    .filter(Boolean)
+    .sort(
+      (a, b) => (a?.dangerousnessLevel || 0) - (b?.dangerousnessLevel || 0),
+    ) as (additive | ingredient)[];
+
+const generateExternalLinks = (brand: string | null, name: string) => {
+  const links = [
+    {
+      href: `https://www.heb.com/search?q=${brand || ""} ${name}`,
+      label: "HEB",
+    },
+    {
+      href: `https://www.walmart.com/search?q=${brand || ""} ${name}`,
+      label: "Walmart",
+    },
+    {
+      href: `https://www.amazon.com/s?k=${brand || ""} ${name}`,
+      label: "Amazon",
+    },
+    {
+      href: `https://www.google.com/search?q=${brand || ""} ${name}`,
+      label: "Google",
+    },
+  ];
+
+  return links.map((link) => (
+    <Link
+      key={link.href}
+      className={cn(
+        buttonVariants({ variant: "link", size: "sm" }),
+        "space-x-1",
+      )}
+      target="_blank"
+      href={link.href}
+    >
+      <span>{link.label}</span>
+      <ExternalLinkIcon className="h-3 w-3" />
+    </Link>
+  ));
+};
+
+const generateTooltip = (item: additive | ingredient) => {
+  const checkIfIngredient = isIngredient(item);
+  const sources = item?.sources || [];
+  const dangerousnessLevel = item?.dangerousnessLevel || 0;
+  const riskStr = getRiskLabel(dangerousnessLevel);
+  const description = checkIfIngredient
+    ? item.inci
+    : strings.resources.string.find((i) => i._name === item?.nameKey)?.__text;
+  const matchedDescription = checkIfIngredient
+    ? item?.description_en
+    : strings.resources.string.find(
+        (i) => i._name === item?.shortDescriptionKey,
+      )?.__text;
+
+  const IngredientSpecificContent = () => {
+    if (!checkIfIngredient) return null;
+
     return (
-      <Pagination>
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious
-              disabled={page === 1}
-              className="cursor-pointer"
-              onClick={() => goToPage(page - 1)}
-              isActive={page !== 1}
-            />
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationNext
-              disabled={!hasMore}
-              className="cursor-pointer"
-              onClick={() => goToPage(page + 1)}
-              isActive={hasMore}
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
+      <div className="flex flex-row space-x-2">
+        {item.carcinogen && (
+          <div className="p-2 rounded bg-slate-100">Carcinogen</div>
+        )}
+        {item.allergen && (
+          <div className="p-2 rounded bg-slate-100">Allergen</div>
+        )}
+        {item.irritant && (
+          <div className="p-2 rounded bg-slate-100">Irritant</div>
+        )}
+        {item.endocrineDisruptor && (
+          <div className="p-2 rounded bg-slate-100">Endocrine Disruptor</div>
+        )}
+      </div>
     );
-  }
+  };
+
+  const AdditiveSpecificContent = () => {
+    if (checkIfIngredient) return null;
+
+    const matchedCategory = strings.resources.string.find(
+      (i) => i._name === item?.category,
+    )?.__text;
+    const matchedCategoryDesc = getCategoryDescription(item?.category || "");
+    const categoryDesc = strings.resources.string.find(
+      (i) => i._name === matchedCategoryDesc?.toString(),
+    )?.__text;
+
+    return (
+      <div className="flex flex-col p-3 rounded bg-slate-100">
+        <span>{decodeDescription(matchedCategory)}</span>
+        <small>
+          {matchedCategoryDesc ? decodeDescription(categoryDesc) : "N/A"}
+        </small>
+      </div>
+    );
+  };
+
+  return description ? (
+    <Tooltip key={item?.id}>
+      <TooltipTrigger>
+        <Badge
+          className="cursor-pointer my-1 mr-1"
+          color={riskColors[dangerousnessLevel] || "zinc"}
+        >
+          {decodeDescription(description)}
+        </Badge>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-sm space-y-4">
+        <div>
+          <Heading level={1}>{decodeDescription(description)}</Heading>
+          <p className="space-x-2 flex-row flex items-center">
+            <Badge
+              style={{ height: 12, width: 12 }}
+              color={riskColors[dangerousnessLevel] || "zinc"}
+            >
+              {" "}
+            </Badge>
+            <span>{riskStr}</span>
+          </p>
+        </div>
+        <IngredientSpecificContent />
+        <AdditiveSpecificContent />
+        <div className="max-h-[200px] overflow-auto space-y-4">
+          <p className="whitespace-pre-wrap">
+            {decodeDescription(matchedDescription)}
+          </p>
+          {sources.length > 0 && (
+            <ul className="flex flex-col space-y-3 list-disc list-inside">
+              {sources.map((source) => (
+                <li key={source.label} className="text-wrap break-words">
+                  {source.year} {source.label}{" "}
+                  {source.url && (
+                    <Link
+                      className="text-blue-500 hover:underline"
+                      target="_blank"
+                      href={source.url}
+                    >
+                      {source.url}
+                    </Link>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </TooltipContent>
+    </Tooltip>
+  ) : checkIfIngredient ? (
+    item.inci
+  ) : (
+    item.code
+  );
 };
 
 export default SearchPage;
