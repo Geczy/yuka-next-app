@@ -667,43 +667,43 @@ const SearchPage: FC = () => {
 																		</Badge>
 																	</TooltipTrigger>
 																	<TooltipContent className="max-w-sm space-y-4">
-																		<div className="max-h-[400px] overflow-auto space-y-4">
-																			<div>
-																				<Heading level={1}>
-																					{decodeDescription(addd.__text)}
-																				</Heading>
-																				<p className="space-x-2 flex-row flex items-center">
-																					<Badge
-																						style={{ height: 12, width: 12 }}
-																						color={
-																							riskColors[dangerousnessLevel] ||
-																							"zinc"
-																						}
-																					>
-																						{" "}
-																					</Badge>
-																					<span>{riskStr}</span>
-																				</p>
-																			</div>
-																			<div className="flex flex-col p-3 rounded bg-slate-100">
-																				<span>
-																					{decodeDescription(
-																						matchedCategory?.__text,
-																					)}
-																				</span>
-																				<small>
-																					{matchedCategoryDesc
-																						? decodeDescription(
-																								strings.resources.string.find(
-																									(i) =>
-																										i._name ===
-																										matchedCategoryDesc.toString(),
-																								)?.__text,
-																							)
-																						: "N/A"}
-																				</small>
-																			</div>
+																		<div>
+																			<Heading level={1}>
+																				{decodeDescription(addd.__text)}
+																			</Heading>
+																			<p className="space-x-2 flex-row flex items-center">
+																				<Badge
+																					style={{ height: 12, width: 12 }}
+																					color={
+																						riskColors[dangerousnessLevel] ||
+																						"zinc"
+																					}
+																				>
+																					{" "}
+																				</Badge>
+																				<span>{riskStr}</span>
+																			</p>
+																		</div>
+																		<div className="flex flex-col p-3 rounded bg-slate-100">
+																			<span>
+																				{decodeDescription(
+																					matchedCategory?.__text,
+																				)}
+																			</span>
+																			<small>
+																				{matchedCategoryDesc
+																					? decodeDescription(
+																							strings.resources.string.find(
+																								(i) =>
+																									i._name ===
+																									matchedCategoryDesc.toString(),
+																							)?.__text,
+																						)
+																					: "N/A"}
+																			</small>
+																		</div>
 
+																		<div className="max-h-[200px] overflow-auto space-y-4">
 																			<p className="whitespace-pre-wrap">
 																				{decodeDescription(
 																					matchedDescription?.__text,
