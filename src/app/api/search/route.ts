@@ -31,10 +31,20 @@ export async function GET(req: NextRequest, res: NextResponse) {
     const result = foodOnlyBool
       ? await prisma.realmfoodproduct.findMany({
           where: {
-            name: {
-              contains: query,
-              mode: "insensitive",
-            },
+            OR: [
+              {
+                name: {
+                  contains: query,
+                  mode: "insensitive",
+                },
+              },
+              {
+                brand: {
+                  contains: query,
+                  mode: "insensitive",
+                },
+              },
+            ],
             grade: {
               gte: minGrade,
               lte: maxGrade,
@@ -48,10 +58,20 @@ export async function GET(req: NextRequest, res: NextResponse) {
         })
       : await prisma.realmcosmeticsproduct.findMany({
           where: {
-            name: {
-              contains: query,
-              mode: "insensitive",
-            },
+            OR: [
+              {
+                name: {
+                  contains: query,
+                  mode: "insensitive",
+                },
+              },
+              {
+                brand: {
+                  contains: query,
+                  mode: "insensitive",
+                },
+              },
+            ],
             grade: {
               gte: minGrade,
               lte: maxGrade,
