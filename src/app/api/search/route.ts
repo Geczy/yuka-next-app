@@ -1,4 +1,5 @@
 import prisma from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import type { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest, res: NextResponse) {
@@ -36,61 +37,106 @@ export async function GET(req: NextRequest, res: NextResponse) {
   const offset = (page - 1) * limit;
 
   try {
-    const result = foodOnlyBool
-      ? await prisma.realmfoodproduct.findMany({
-          where: {
-            OR: [
-              {
-                name: {
-                  contains: query,
-                  mode: "insensitive",
+    let result;
+
+    if (orderBy === "proteins") {
+      result = await prisma.realmfoodproduct.aggregateRaw({
+        pipeline: [
+          {
+            $match: {
+              $and: [
+                {
+                  $or: [
+                    { name: { $regex: query, $options: "i" } },
+                    { brand: { $regex: query, $options: "i" } },
+                  ],
                 },
-              },
-              {
-                brand: {
-                  contains: query,
-                  mode: "insensitive",
-                },
-              },
-            ],
-            grade: {
-              gte: minGrade,
-              lte: maxGrade,
+                { grade: { $gte: minGrade, $lte: maxGrade } },
+              ],
             },
           },
-          orderBy: {
-            [orderBy]: "desc",
-          },
-          skip: offset,
-          take: limit + 1,
-        })
-      : await prisma.realmcosmeticsproduct.findMany({
-          where: {
-            OR: [
-              {
-                name: {
-                  contains: query,
-                  mode: "insensitive",
-                },
+          {
+            $addFields: {
+              id: {
+                $toString: "$_id",
               },
-              {
-                brand: {
-                  contains: query,
-                  mode: "insensitive",
-                },
+              proteinsPerServing: {
+                $multiply: ["$proteins", { $divide: ["$servingSize", 100] }],
               },
-            ],
-            grade: {
-              gte: minGrade,
-              lte: maxGrade,
             },
           },
-          orderBy: {
-            grade: "desc",
+          {
+            $sort: { proteinsPerServing: -1 },
           },
-          skip: offset,
-          take: limit + 1,
-        });
+          {
+            $skip: offset,
+          },
+          {
+            $limit: limit + 1,
+          },
+        ],
+      });
+    } else {
+      result = foodOnlyBool
+        ? await prisma.realmfoodproduct.findMany({
+            where: {
+              OR: [
+                {
+                  name: {
+                    contains: query,
+                    mode: "insensitive",
+                  },
+                },
+                {
+                  brand: {
+                    contains: query,
+                    mode: "insensitive",
+                  },
+                },
+              ],
+              grade: {
+                gte: minGrade,
+                lte: maxGrade,
+              },
+            },
+            orderBy: {
+              [orderBy]: "desc",
+            },
+            skip: offset,
+            take: limit + 1,
+          })
+        : await prisma.realmcosmeticsproduct.findMany({
+            where: {
+              OR: [
+                {
+                  name: {
+                    contains: query,
+                    mode: "insensitive",
+                  },
+                },
+                {
+                  brand: {
+                    contains: query,
+                    mode: "insensitive",
+                  },
+                },
+              ],
+              grade: {
+                gte: minGrade,
+                lte: maxGrade,
+              },
+            },
+            orderBy: {
+              grade: "desc",
+            },
+            skip: offset,
+            take: limit + 1,
+          });
+    }
+
+    if (!result || !Array.isArray(result)) {
+      return Response.json({ error: "No results found" }, { status: 404 });
+    }
 
     const hasMore = result.length > limit;
     if (hasMore) {
