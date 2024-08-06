@@ -154,6 +154,7 @@ const SearchPage: FC = () => {
     maxGrade: initialMaxGrade,
   } = getInitialParams();
 
+  const [lookupQuery, setLookupQuery] = useState("");
   const [query, setQuery] = useState(initialQuery);
   const [foodOnly, setFoodOnly] = useState(initialFoodOnly);
   const [minGrade, setMinGrade] = useState(initialMinGrade);
@@ -177,6 +178,18 @@ const SearchPage: FC = () => {
     hasMore: boolean;
   }>(
     `/api/search?query=${query}&foodOnly=${foodOnly}&minGrade=${minGrade}&maxGrade=${maxGrade}&page=${page}&limit=${limit}`,
+    fetcher,
+  );
+
+  const {
+    data: { additives: lookupAdditives, ingredients: lookupIngredients } = {
+      additives: [],
+      ingredients: [],
+    },
+    error: lookupError,
+    isLoading: lookupIsLoading,
+  } = useSWR<{ additives: additive[]; ingredients: ingredient[] }>(
+    `/api/ingredient?query=${lookupQuery}`,
     fetcher,
   );
 
@@ -245,6 +258,8 @@ const SearchPage: FC = () => {
         <div className="flex flex-col space-y-8">
           <SearchForm
             query={query}
+            setLookupQuery={setLookupQuery}
+            lookupQuery={lookupQuery}
             foodOnly={foodOnly}
             minGrade={minGrade}
             maxGrade={maxGrade}
@@ -253,6 +268,13 @@ const SearchPage: FC = () => {
             setMinGrade={setMinGrade}
             setMaxGrade={setMaxGrade}
           />
+          <div>
+            {lookupQuery &&
+              [
+                ...(Array.isArray(lookupIngredients) ? lookupIngredients : []),
+                ...(Array.isArray(lookupAdditives) ? lookupAdditives : []),
+              ].map((ingredient) => generateTooltip(ingredient))}
+          </div>
           <div className="flex flex-col space-y-6 w-full">
             {error && (
               <Alert className="max-h-[100px]" variant="destructive">
@@ -336,8 +358,13 @@ const SearchPage: FC = () => {
                               : "additives" in hit && (
                                   <Badge color="zinc">No additives</Badge>
                                 )}
+
                             {Array.isArray(sortedIngredients) &&
-                              sortedIngredients.map(generateTooltip)}
+                            sortedIngredients.length > 0
+                              ? sortedIngredients.map(generateTooltip)
+                              : !("additives" in hit) && (
+                                  <Badge color="zinc">No ingredients</Badge>
+                                )}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -363,15 +390,19 @@ const SearchPage: FC = () => {
 
 const SearchForm: FC<{
   query: string;
+  lookupQuery: string;
   foodOnly: boolean;
   minGrade: number;
   maxGrade: number;
   toggleFoodOnly: () => void;
+  setLookupQuery: (query: string) => void;
   setQuery: (query: string) => void;
   setMinGrade: (grade: number) => void;
   setMaxGrade: (grade: number) => void;
 }> = ({
   query,
+  lookupQuery,
+  setLookupQuery,
   foodOnly,
   minGrade,
   maxGrade,
@@ -384,17 +415,40 @@ const SearchForm: FC<{
     <Fieldset>
       <FieldGroup>
         <div className="flex flex-row items-center justify-between space-x-4">
-          <Field className="w-full">
-            <Label>Name</Label>
-            <Input
-              onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                setQuery(e.target.value);
-              }}
-              defaultValue={query}
-              name="query"
-              placeholder="Search by product name..."
-            />
-          </Field>
+          <div className="flex flex-col w-full space-y-4">
+            <Field className="w-full">
+              <Label>Name</Label>
+              <Input
+                onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                  setQuery(e.target.value);
+                }}
+                defaultValue={query}
+                name="query"
+                placeholder="Search by product name..."
+              />
+            </Field>
+            <Field className="w-full">
+              <Label>Ingredient lookup</Label>
+              <Input
+                onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                  const matchingAdditive = strings.resources.string
+                    .filter((i) => i.__text && i._name.endsWith("_name"))
+                    .find((i) =>
+                      i.__text
+                        ?.toLowerCase()
+                        .includes(e.target.value.toLowerCase().trim()),
+                    );
+                  const searchAdditive =
+                    matchingAdditive?._name.replace("_name", "") ||
+                    e.target.value;
+                  setLookupQuery(searchAdditive);
+                }}
+                defaultValue={lookupQuery}
+                name="lookupQuery"
+                placeholder="Search by product name..."
+              />
+            </Field>
+          </div>
           <Field className="w-full">
             <Label>Type</Label>
             <Listbox
