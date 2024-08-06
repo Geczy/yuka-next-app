@@ -431,13 +431,18 @@ const SearchForm: FC<{
               <Label>Ingredient lookup</Label>
               <Input
                 onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                  const inputValue = e.target.value.toLowerCase().trim();
+
+                  if (!inputValue) {
+                    setLookupQuery("");
+                    return;
+                  }
+
                   const matchingAdditive = strings.resources.string
                     .filter((i) => i.__text && i._name.endsWith("_name"))
-                    .find((i) =>
-                      i.__text
-                        ?.toLowerCase()
-                        .includes(e.target.value.toLowerCase().trim()),
-                    );
+                    .find((i) => {
+                      return i.__text?.toLowerCase().includes(inputValue);
+                    });
                   const searchAdditive =
                     matchingAdditive?._name.replace("_name", "") ||
                     e.target.value;

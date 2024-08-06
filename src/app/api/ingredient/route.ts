@@ -5,7 +5,7 @@ export async function GET(req: NextRequest, res: NextResponse) {
   const searchParams = req.nextUrl.searchParams;
   const query = searchParams.get("query")?.trim();
 
-  if (typeof query !== "string") {
+  if (typeof query !== "string" || !query) {
     return Response.json(
       { error: "Invalid query parameters" },
       { status: 400 },
