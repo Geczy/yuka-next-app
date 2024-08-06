@@ -242,7 +242,7 @@ const SearchPage: FC = () => {
   return (
     <TooltipProvider delayDuration={0}>
       <div className="p-4 md:p-6 lg:p-8">
-        <div className="flex flex-col space-y-8 md:flex-row md:space-y-0 md:space-x-8">
+        <div className="flex flex-col space-y-8">
           <SearchForm
             query={query}
             foodOnly={foodOnly}
@@ -380,10 +380,10 @@ const SearchForm: FC<{
   setMinGrade,
   setMaxGrade,
 }) => (
-  <form className="md:w-1/3 w-full">
+  <form className="w-full">
     <Fieldset>
       <FieldGroup>
-        <div className="flex col justify-between space-x-4">
+        <div className="flex flex-row items-center justify-between space-x-4">
           <Field className="w-full">
             <Label>Name</Label>
             <Input
@@ -411,8 +411,6 @@ const SearchForm: FC<{
               </ListboxOption>
             </Listbox>
           </Field>
-        </div>
-        <div className="flex col justify-between space-x-4">
           <Field className="w-full space-y-3">
             <Label>Min grade {minGrade}</Label>
             <Slider
@@ -630,31 +628,22 @@ const generateTooltip = (item: additive | ingredient) => {
             {decodeDescription(matchedDescription)}
           </p>
           {sources.length > 0 && (
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="item-1">
-                <AccordionTrigger className="text-blue-500 hover:underline">
-                  View sources...
-                </AccordionTrigger>
-                <AccordionContent>
-                  <ul className="flex flex-col space-y-3 list-disc list-inside">
-                    {sources.map((source) => (
-                      <li key={source.label} className="text-wrap break-words">
-                        {source.year} {source.label}{" "}
-                        {source.url && (
-                          <Link
-                            className="text-blue-500 hover:underline"
-                            target="_blank"
-                            href={source.url}
-                          >
-                            {source.url}
-                          </Link>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+            <ul className="flex flex-col space-y-3 list-disc list-inside">
+              {sources.map((source) => (
+                <li key={source.label} className="text-wrap break-words">
+                  {source.year} {source.label}{" "}
+                  {source.url && (
+                    <Link
+                      className="text-blue-500 hover:underline"
+                      target="_blank"
+                      href={source.url}
+                    >
+                      {source.url}
+                    </Link>
+                  )}
+                </li>
+              ))}
+            </ul>
           )}
         </div>
       </TooltipContent>
