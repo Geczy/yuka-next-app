@@ -331,11 +331,11 @@ const SearchPage: FC = () => {
                         <TableCell>
                           <div className="flex flex-row flex-wrap items-center max-h-[150px] overflow-auto">
                             {Array.isArray(sortedAdditives) &&
-                            sortedAdditives.length > 0 ? (
-                              sortedAdditives.map(generateTooltip)
-                            ) : (
-                              <Badge color="zinc">No additives</Badge>
-                            )}
+                            sortedAdditives.length > 0
+                              ? sortedAdditives.map(generateTooltip)
+                              : "ingredients" in hit && (
+                                  <Badge color="zinc">No additives</Badge>
+                                )}
                             {Array.isArray(sortedIngredients) &&
                               sortedIngredients.map(generateTooltip)}
                           </div>
