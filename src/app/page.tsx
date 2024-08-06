@@ -8,9 +8,11 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Field, FieldGroup, Fieldset, Label } from "@/components/ui/fieldset";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Field, FieldGroup, Fieldset } from "@/components/ui/fieldset";
 import { Heading } from "@/components/ui/heading";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Listbox, ListboxLabel, ListboxOption } from "@/components/ui/listbox";
 import {
   Pagination,
@@ -19,6 +21,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -59,6 +62,10 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 const isIngredient = (item: additive | ingredient): item is ingredient =>
   "inci" in item;
+
+const isFood = (
+  item: realmfoodproduct | realmcosmeticsproduct,
+): item is realmfoodproduct => "nutritionFactsFormat" in item;
 
 const decodeDescription = (description?: string | null): string =>
   description
@@ -156,6 +163,7 @@ const SearchPage: FC = () => {
 
   const [lookupQuery, setLookupQuery] = useState("");
   const [query, setQuery] = useState(initialQuery);
+  const [orderBy, setOrderBy] = useState("grade");
   const [foodOnly, setFoodOnly] = useState(initialFoodOnly);
   const [minGrade, setMinGrade] = useState(initialMinGrade);
   const [maxGrade, setMaxGrade] = useState(initialMaxGrade);
@@ -177,7 +185,7 @@ const SearchPage: FC = () => {
     ingredients: ingredient[];
     hasMore: boolean;
   }>(
-    `/api/search?query=${query}&foodOnly=${foodOnly}&minGrade=${minGrade}&maxGrade=${maxGrade}&page=${page}&limit=${limit}`,
+    `/api/search?query=${query}&orderBy=${orderBy}&foodOnly=${foodOnly}&minGrade=${minGrade}&maxGrade=${maxGrade}&page=${page}&limit=${limit}`,
     fetcher,
   );
 
@@ -226,6 +234,10 @@ const SearchPage: FC = () => {
     };
   }, []);
 
+  const setProtein = (protein: boolean) => {
+    setOrderBy(protein ? "proteins" : "grade");
+  };
+
   const toggleFoodOnly = () => {
     const newFoodOnly = !foodOnly;
     const params = new URLSearchParams(window.location.search);
@@ -257,6 +269,7 @@ const SearchPage: FC = () => {
       <div className="p-4 md:p-6 lg:p-8">
         <div className="flex flex-col space-y-8">
           <SearchForm
+            setProtein={setProtein}
             query={query}
             setLookupQuery={setLookupQuery}
             lookupQuery={lookupQuery}
@@ -307,12 +320,11 @@ const SearchPage: FC = () => {
                 <TableBody>
                   {(isLoading || !result) && <LoadingSkeleton />}
                   {result?.map((hit) => {
-                    const sortedAdditives =
-                      "additives" in hit &&
-                      sortAdditivesOrIngredients(hit.additives, additives);
-                    const sortedIngredients =
-                      "ingredients" in hit &&
-                      sortAdditivesOrIngredients(hit.ingredients, ingredients);
+                    const sortedAdditives = sortAdditivesOrIngredients(
+                      isFood(hit) ? hit.additives : hit.ingredients,
+                      isFood(hit) ? additives : ingredients,
+                    );
+
                     return (
                       <TableRow key={`term-${hit.id}`}>
                         <TableCell>
@@ -353,19 +365,32 @@ const SearchPage: FC = () => {
                         <TableCell>
                           <div className="flex flex-row flex-wrap items-center max-h-[150px] overflow-auto">
                             {Array.isArray(sortedAdditives) &&
-                            sortedAdditives.length > 0
-                              ? sortedAdditives.map(generateTooltip)
-                              : "additives" in hit && (
-                                  <Badge color="zinc">No additives</Badge>
-                                )}
-
-                            {Array.isArray(sortedIngredients) &&
-                            sortedIngredients.length > 0
-                              ? sortedIngredients.map(generateTooltip)
-                              : !("additives" in hit) && (
-                                  <Badge color="zinc">No ingredients</Badge>
-                                )}
+                            sortedAdditives.length > 0 ? (
+                              sortedAdditives.map(generateTooltip)
+                            ) : (
+                              <Badge color="zinc">
+                                No {isFood(hit) ? "additives" : "ingredients"}
+                              </Badge>
+                            )}
                           </div>
+                          {isFood(hit) && (
+                            <>
+                              <div className="flex flex-row">
+                                {(
+                                  (Number(hit.proteins) / 100) *
+                                  Number(hit.servingSize)
+                                ).toFixed(0)}
+                                g protein
+                              </div>
+                              <div className="flex flex-row">
+                                {(
+                                  (Number(hit.calories) / 100) *
+                                  Number(hit.servingSize)
+                                ).toFixed(0)}{" "}
+                                cal
+                              </div>
+                            </>
+                          )}
                         </TableCell>
                         <TableCell>
                           {generateExternalLinks(hit.brand, hit.name)}
@@ -398,6 +423,7 @@ const SearchForm: FC<{
   setLookupQuery: (query: string) => void;
   setQuery: (query: string) => void;
   setMinGrade: (grade: number) => void;
+  setProtein: (protein: boolean) => void;
   setMaxGrade: (grade: number) => void;
 }> = ({
   query,
@@ -408,6 +434,7 @@ const SearchForm: FC<{
   maxGrade,
   setQuery,
   toggleFoodOnly,
+  setProtein,
   setMinGrade,
   setMaxGrade,
 }) => (
@@ -427,6 +454,7 @@ const SearchForm: FC<{
                 placeholder="Search by product name..."
               />
             </Field>
+
             <Field className="w-full">
               <Label>Ingredient lookup</Label>
               <Input
@@ -453,47 +481,59 @@ const SearchForm: FC<{
                 placeholder="Search by product name..."
               />
             </Field>
+            <div className="flex flex-col space-y-2">
+              <RadioGroup
+                onChange={toggleFoodOnly}
+                defaultValue={foodOnly ? "food" : "cosmetics"}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="food" id="food" />
+                  <Label htmlFor="food">Food</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="cosmetics" id="cosmetics" />
+                  <Label htmlFor="cosmetics">Cosmetics</Label>
+                </div>
+              </RadioGroup>
+              {foodOnly && (
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="orderBy" onCheckedChange={setProtein} />
+                  <label
+                    htmlFor="orderBy"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Sort by protein
+                  </label>
+                </div>
+              )}
+            </div>
           </div>
-          <Field className="w-full">
-            <Label>Type</Label>
-            <Listbox
-              onChange={toggleFoodOnly}
-              value={foodOnly ? "food" : "cosmetics"}
-              name="status"
-              defaultValue="food"
-            >
-              <ListboxOption value="food">
-                <ListboxLabel>Food</ListboxLabel>
-              </ListboxOption>
-              <ListboxOption value="cosmetics">
-                <ListboxLabel>Cosmetics</ListboxLabel>
-              </ListboxOption>
-            </Listbox>
-          </Field>
-          <Field className="w-full space-y-3">
-            <Label>Min grade {minGrade}</Label>
-            <Slider
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                setMinGrade(Number.parseInt(e.target.value))
-              }
-              defaultValue={[minGrade]}
-              max={100}
-              min={0}
-              step={1}
-            />
-          </Field>
-          <Field className="w-full space-y-3">
-            <Label>Max grade {maxGrade}</Label>
-            <Slider
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                setMaxGrade(Number.parseInt(e.target.value))
-              }
-              defaultValue={[maxGrade]}
-              max={100}
-              min={0}
-              step={1}
-            />
-          </Field>
+          <div className="flex flex-col w-full space-y-2">
+            <Field className="w-full space-y-3">
+              <Label>Min grade {minGrade}</Label>
+              <Slider
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  setMinGrade(Number.parseInt(e.target.value))
+                }
+                defaultValue={[minGrade]}
+                max={100}
+                min={0}
+                step={1}
+              />
+            </Field>
+            <Field className="w-full space-y-3">
+              <Label>Max grade {maxGrade}</Label>
+              <Slider
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  setMaxGrade(Number.parseInt(e.target.value))
+                }
+                defaultValue={[maxGrade]}
+                max={100}
+                min={0}
+                step={1}
+              />
+            </Field>
+          </div>
         </div>
       </FieldGroup>
     </Fieldset>

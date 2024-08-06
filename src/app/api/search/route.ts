@@ -8,6 +8,7 @@ export async function GET(req: NextRequest, res: NextResponse) {
   const minGrade = Number.parseInt(searchParams.get("minGrade") || "80");
   const maxGrade = Number.parseInt(searchParams.get("maxGrade") || "100");
   const page = Number.parseInt(searchParams.get("page") || "1");
+  const orderBy = searchParams.get("orderBy") || "grade";
   const limit = Number.parseInt(searchParams.get("limit") || "10");
 
   if (
@@ -20,6 +21,13 @@ export async function GET(req: NextRequest, res: NextResponse) {
   ) {
     return Response.json(
       { error: "Invalid query parameters" },
+      { status: 400 },
+    );
+  }
+
+  if (orderBy !== "grade" && orderBy !== "proteins") {
+    return Response.json(
+      { error: "Invalid orderBy parameter" },
       { status: 400 },
     );
   }
@@ -51,7 +59,7 @@ export async function GET(req: NextRequest, res: NextResponse) {
             },
           },
           orderBy: {
-            grade: "desc",
+            [orderBy]: "desc",
           },
           skip: offset,
           take: limit + 1,
