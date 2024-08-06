@@ -333,7 +333,7 @@ const SearchPage: FC = () => {
                             {Array.isArray(sortedAdditives) &&
                             sortedAdditives.length > 0
                               ? sortedAdditives.map(generateTooltip)
-                              : "ingredients" in hit && (
+                              : "additives" in hit && (
                                   <Badge color="zinc">No additives</Badge>
                                 )}
                             {Array.isArray(sortedIngredients) &&
