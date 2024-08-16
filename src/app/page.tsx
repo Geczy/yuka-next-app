@@ -290,7 +290,7 @@ const SearchPage: FC = () => {
             )}
             {!lookupIsLoading && lookupQuery && (
               <>
-                {lookupIngredients?.length > 0 && (
+                {(lookupIngredients?.length ?? 0) > 0 && (
                   <>
                     <h1>Cosmetic ingredients</h1>
                     {(lookupIngredients || []).map((ingredient) =>
@@ -298,7 +298,7 @@ const SearchPage: FC = () => {
                     )}
                   </>
                 )}
-                {lookupAdditives?.length > 0 && (
+                {(lookupAdditives?.length ?? 0) > 0 && (
                   <>
                     <h1>Food additives</h1>
                     {(lookupAdditives || []).map((additive) =>
@@ -307,8 +307,10 @@ const SearchPage: FC = () => {
                   </>
                 )}
                 <small>
-                  Found {lookupIngredients?.length + lookupAdditives?.length} /{" "}
-                  {lookupQuery.split(",").length} items
+                  Found{" "}
+                  {(lookupIngredients?.length ?? 0) +
+                    (lookupAdditives?.length ?? 0)}{" "}
+                  / {lookupQuery.split(",").length} items
                 </small>
                 {notFoundItems.length > 0 && (
                   <small>Not found: {notFoundItems.join(", ")}</small>
