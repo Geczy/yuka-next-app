@@ -1,19 +1,12 @@
 "use client";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldGroup, Fieldset } from "@/components/ui/fieldset";
 import { Heading } from "@/components/ui/heading";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Listbox, ListboxLabel, ListboxOption } from "@/components/ui/listbox";
 import {
   Pagination,
   PaginationContent,
@@ -21,6 +14,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { lookupAdditive } from "@/lib/lookup";
+
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
@@ -48,13 +43,7 @@ import type {
 import { AlertCircle, ExternalLinkIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  type ChangeEvent,
-  type FC,
-  type FormEvent,
-  useEffect,
-  useState,
-} from "react";
+import { type ChangeEvent, type FC, useEffect, useState } from "react";
 import useSWR from "swr";
 import strings from "../assets/strings.json";
 
@@ -196,7 +185,7 @@ const SearchPage: FC = () => {
     },
     error: lookupError,
     isLoading: lookupIsLoading,
-  } = useSWR<{ additives: additive[]; ingredients: ingredient[] }>(
+  } = useSWR<{ additives?: additive[]; ingredients?: ingredient[] }>(
     `/api/ingredient?query=${lookupQuery}`,
     fetcher,
   );
@@ -264,6 +253,16 @@ const SearchPage: FC = () => {
     window.history.pushState({}, "", `${window.location.pathname}?${params}`);
   };
 
+  const notFoundItems = lookupQuery.split(",").filter((q) => {
+    const foundIngredient = lookupIngredients?.find((i) =>
+      i.inci.toLowerCase().includes(q.toLowerCase().trim()),
+    );
+    const foundAdditive = lookupAdditives?.find(
+      (a) => a.code === lookupAdditive(q)[0],
+    );
+    return !foundIngredient && !foundAdditive;
+  });
+
   return (
     <TooltipProvider delayDuration={0}>
       <div className="p-4 md:p-6 lg:p-8">
@@ -281,12 +280,41 @@ const SearchPage: FC = () => {
             setMinGrade={setMinGrade}
             setMaxGrade={setMaxGrade}
           />
-          <div>
-            {lookupQuery &&
-              [
-                ...(Array.isArray(lookupIngredients) ? lookupIngredients : []),
-                ...(Array.isArray(lookupAdditives) ? lookupAdditives : []),
-              ].map((ingredient) => generateTooltip(ingredient))}
+          <div className="flex flex-col space-y-1 max-w-sm">
+            {lookupIsLoading && (
+              <>
+                <Skeleton className="h-4 w-[100px]" />
+                <Skeleton className="h-4 w-[100px]" />
+                <Skeleton className="h-4 w-[100px]" />
+              </>
+            )}
+            {!lookupIsLoading && lookupQuery && (
+              <>
+                {lookupIngredients?.length > 0 && (
+                  <>
+                    <h1>Cosmetic ingredients</h1>
+                    {(lookupIngredients || []).map((ingredient) =>
+                      generateTooltip(ingredient),
+                    )}
+                  </>
+                )}
+                {lookupAdditives?.length > 0 && (
+                  <>
+                    <h1>Food additives</h1>
+                    {(lookupAdditives || []).map((additive) =>
+                      generateTooltip(additive),
+                    )}
+                  </>
+                )}
+                <small>
+                  Found {lookupIngredients?.length + lookupAdditives?.length} /{" "}
+                  {lookupQuery.split(",").length} items
+                </small>
+                {notFoundItems.length > 0 && (
+                  <small>Not found: {notFoundItems.join(", ")}</small>
+                )}
+              </>
+            )}
           </div>
           <div className="flex flex-col space-y-6 w-full">
             {error && (
@@ -466,15 +494,7 @@ const SearchForm: FC<{
                     return;
                   }
 
-                  const matchingAdditive = strings.resources.string
-                    .filter((i) => i.__text && i._name.endsWith("_name"))
-                    .find((i) => {
-                      return i.__text?.toLowerCase().includes(inputValue);
-                    });
-                  const searchAdditive =
-                    matchingAdditive?._name.replace("_name", "") ||
-                    e.target.value;
-                  setLookupQuery(searchAdditive);
+                  setLookupQuery(inputValue);
                 }}
                 defaultValue={lookupQuery}
                 name="lookupQuery"
