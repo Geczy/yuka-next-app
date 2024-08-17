@@ -2,9 +2,9 @@ import prisma from "@/lib/db";
 import { lookupAdditive, separator } from "@/lib/lookup";
 import type { NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: NextRequest, res: NextResponse) {
-  const searchParams = req.nextUrl.searchParams;
-  const query = searchParams.get("query")?.trim();
+export async function POST(req: NextRequest, res: NextResponse) {
+  const body = await req.json();
+  const query = body.query?.trim();
 
   if (typeof query !== "string" || !query) {
     return Response.json(
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest, res: NextResponse) {
       orderBy: {
         dangerousnessLevel: "asc",
       },
-      take: 15,
+      take: 80,
     });
     const additives = await prisma.additive.findMany({
       where: {
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest, res: NextResponse) {
       orderBy: {
         dangerousnessLevel: "asc",
       },
-      take: 15,
+      take: 80,
     });
 
     return Response.json({ additives, ingredients }, { status: 200 });

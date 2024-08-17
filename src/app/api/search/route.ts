@@ -1,20 +1,19 @@
 import prisma from "@/lib/db";
-import { Prisma } from "@prisma/client";
 import type { NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: NextRequest, res: NextResponse) {
-  const searchParams = req.nextUrl.searchParams;
-  const query = searchParams.get("query")?.trim();
-  const foodOnly = searchParams.get("foodOnly");
-  const minGrade = Number.parseInt(searchParams.get("minGrade") || "80");
-  const maxGrade = Number.parseInt(searchParams.get("maxGrade") || "100");
-  const page = Number.parseInt(searchParams.get("page") || "1");
-  const orderBy = searchParams.get("orderBy") || "grade";
-  const limit = Number.parseInt(searchParams.get("limit") || "10");
+export async function POST(req: NextRequest, res: NextResponse) {
+  const body = await req.json();
+  const query = body.query?.trim();
+  const foodOnly = body.foodOnly;
+  const minGrade = Number.parseInt(body.minGrade || "80");
+  const maxGrade = Number.parseInt(body.maxGrade || "100");
+  const page = Number.parseInt(body.page || "1");
+  const orderBy = body.orderBy || "grade";
+  const limit = Number.parseInt(body.limit || "10");
 
   if (
     typeof query !== "string" ||
-    typeof foodOnly !== "string" ||
+    typeof foodOnly !== "boolean" ||
     Number.isNaN(minGrade) ||
     Number.isNaN(maxGrade) ||
     Number.isNaN(page) ||
@@ -33,7 +32,7 @@ export async function GET(req: NextRequest, res: NextResponse) {
     );
   }
 
-  const foodOnlyBool = foodOnly === "true";
+  const foodOnlyBool = foodOnly === true;
   const offset = (page - 1) * limit;
 
   try {

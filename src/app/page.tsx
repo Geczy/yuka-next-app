@@ -40,6 +40,7 @@ import type {
   realmcosmeticsproduct,
   realmfoodproduct,
 } from "@prisma/client";
+import axios from "axios";
 import { AlertCircle, ExternalLinkIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -47,7 +48,16 @@ import { type ChangeEvent, type FC, useEffect, useState } from "react";
 import useSWR from "swr";
 import strings from "../assets/strings.json";
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+// Fetcher function using axios for POST requests
+const fetcher = async (api: string, data: any) => {
+  try {
+    const response = await axios.post(api, data);
+    return response.data;
+  } catch (error) {
+    console.error("Error", error);
+    throw error;
+  }
+};
 
 const isIngredient = (item: additive | ingredient): item is ingredient =>
   "inci" in item;
@@ -159,6 +169,18 @@ const SearchPage: FC = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
 
+  // Create the request body object
+  const requestBody = {
+    query,
+    orderBy,
+    foodOnly,
+    minGrade,
+    maxGrade,
+    page,
+    limit,
+  };
+
+  // useSWR hook for POST request
   const {
     data: { result, additives, ingredients, hasMore } = {
       result: [],
@@ -173,11 +195,9 @@ const SearchPage: FC = () => {
     additives: additive[];
     ingredients: ingredient[];
     hasMore: boolean;
-  }>(
-    `/api/search?query=${query}&orderBy=${orderBy}&foodOnly=${foodOnly}&minGrade=${minGrade}&maxGrade=${maxGrade}&page=${page}&limit=${limit}`,
-    fetcher,
-  );
+  }>(["/api/search", requestBody], ([api, data]) => fetcher(api, data));
 
+  // useSWR hook for POST request
   const {
     data: { additives: lookupAdditives, ingredients: lookupIngredients } = {
       additives: [],
@@ -186,8 +206,8 @@ const SearchPage: FC = () => {
     error: lookupError,
     isLoading: lookupIsLoading,
   } = useSWR<{ additives?: additive[]; ingredients?: ingredient[] }>(
-    `/api/ingredient?query=${lookupQuery}`,
-    fetcher,
+    ["/api/ingredient", { query: lookupQuery }],
+    ([api, data]) => fetcher(api, data),
   );
 
   const updateStateFromURL = () => {
