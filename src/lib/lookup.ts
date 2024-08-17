@@ -2,7 +2,10 @@ import strings from "@/assets/strings.json";
 
 export function separator(inputValue: string) {
   const inputValues = inputValue
-    .replace(/\.$/, "") // Remove the period at the end if it exists
+    .replaceAll(".", ",") // Replace . with a comma
+    .replaceAll("and ", ",") // Replace "and" with a comma
+    .replaceAll("from ", "") // Remove "from"
+    .replace(/[^\w\s,()]/g, "") // Remove special characters like ®
     .split(/,(?![^\(]*\))/) // Split by commas not inside parentheses
     .flatMap((value) => {
       // Handle cases with parentheses by splitting them
@@ -13,6 +16,7 @@ export function separator(inputValue: string) {
       return parts;
     })
     .flatMap((value) => value.split(",").map((v) => v.trim())) // Split by comma if it exists within the value
+    .flatMap((value) => value.split(":").map((v) => v.trim())) // Split by : if it exists within the value
     .filter((value) => value.length > 0); // Remove empty strings
 
   return inputValues;
