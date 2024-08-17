@@ -1,5 +1,5 @@
 import prisma from "@/lib/db";
-import { lookupAdditive } from "@/lib/lookup";
+import { lookupAdditive, separator } from "@/lib/lookup";
 import type { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest, res: NextResponse) {
@@ -21,11 +21,7 @@ export async function GET(req: NextRequest, res: NextResponse) {
   }
 
   try {
-    const queryArray = query
-      .split(",")
-      .map((value) => value.trim().toLowerCase())
-      .filter((value) => value.length > 0);
-
+    const queryArray = separator(query);
     const ingredients = await prisma.ingredient.findMany({
       where: {
         OR: queryArray.map((value) => ({
@@ -42,10 +38,12 @@ export async function GET(req: NextRequest, res: NextResponse) {
     });
     const additives = await prisma.additive.findMany({
       where: {
-        code: {
-          in: lookupAdditive(query),
-          mode: "insensitive",
-        },
+        OR: lookupAdditive(query).map((value) => ({
+          code: {
+            equals: value,
+            mode: "insensitive",
+          },
+        })),
       },
       orderBy: {
         dangerousnessLevel: "asc",

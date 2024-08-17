@@ -14,7 +14,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { lookupAdditive } from "@/lib/lookup";
+import { lookupAdditive, separator } from "@/lib/lookup";
 
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -253,7 +253,7 @@ const SearchPage: FC = () => {
     window.history.pushState({}, "", `${window.location.pathname}?${params}`);
   };
 
-  const notFoundItems = lookupQuery.split(",").filter((q) => {
+  const notFoundItems = separator(lookupQuery).filter((q) => {
     const foundIngredient = lookupIngredients?.find((i) =>
       i.inci.toLowerCase().includes(q.toLowerCase().trim()),
     );
@@ -306,14 +306,12 @@ const SearchPage: FC = () => {
                     )}
                   </>
                 )}
-                <small>
-                  Found{" "}
-                  {(lookupIngredients?.length ?? 0) +
-                    (lookupAdditives?.length ?? 0)}{" "}
-                  / {lookupQuery.split(",").length} items
-                </small>
+
                 {notFoundItems.length > 0 && (
-                  <small>Not found: {notFoundItems.join(", ")}</small>
+                  <small>
+                    {notFoundItems.length} / {separator(lookupQuery).length}{" "}
+                    items not found: {notFoundItems.join(", ")}
+                  </small>
                 )}
               </>
             )}
